@@ -37,12 +37,46 @@ const initMap = async () => {
 
   try {
     await loadMapScript(settingsStore.mapKey)
+
+    await new Promise((resolve) => {
+      window.AMap.plugin([
+        'AMap.Scale',
+        'AMap.ToolBar',
+        'AMap.ControlBar',
+        'AMap.Geocoder',
+        'AMap.PlaceSearch',
+        'AMap.AutoComplete',
+        'AMap.Driving',
+        'AMap.Transfer',
+        'AMap.Walking',
+        'AMap.Riding'
+      ], () => {
+        resolve()
+      })
+    })
+
     const placeholder = mapContainer.value.querySelector('.map-placeholder')
     if (placeholder) placeholder.remove()
+
     map = new window.AMap.Map(mapContainer.value, {
       zoom: 10,
-      center: [116.397428, 39.90923]
+      center: [116.397428, 39.90923],
+      viewMode: '2D',
+      showIndoorMap: false
     })
+
+    map.addControl(new window.AMap.Scale())
+    map.addControl(new window.AMap.ToolBar({
+      position: 'RT',
+      visible: true,
+      autoPosition: false,
+      locate: false,
+      liteStyle: false,
+      direction: true,
+      showTitle: true,
+      offset: new window.AMap.Pixel(0, 20)
+    }))
+
     mapLoaded = true
     updateMarkers()
   } catch (e) {
