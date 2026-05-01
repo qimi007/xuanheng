@@ -1,0 +1,16 @@
+[project]
+name = "map-tool"
+version = "0.1.0"
+description = "地图工具桌面应用"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+    "pywebview>=4.0",
+]
+
+[tool.uv]
+dev-dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
