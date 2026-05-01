@@ -82,19 +82,48 @@ const initMap = async () => {
       showCompass: true
     }))
 
-    map.addControl(new window.AMap.MapType({
-      visible: true,
-      position: 'RT',
-      offset: new window.AMap.Pixel(-20, 150),
-      showRoad: true,
-      showTraffic: false
-    }))
+    initContextMenu()
 
     mapLoaded = true
     updateMarkers()
   } catch (e) {
     console.error('加载地图失败:', e)
   }
+}
+
+const initContextMenu = () => {
+  const contextMenu = new window.AMap.ContextMenu()
+
+  contextMenu.addItem('标准地图', () => {
+    map.setMapType('normal')
+  }, 0)
+
+  contextMenu.addItem('卫星地图', () => {
+    map.setMapType('satellite')
+  }, 1)
+
+  contextMenu.addItem('显示路网', () => {
+    map.add(new window.AMap.RoadNet())
+  }, 2)
+
+  contextMenu.addItem('隐藏路网', () => {
+    map.remove(new window.AMap.RoadNet())
+  }, 3)
+
+  contextMenu.addItem('显示路况', () => {
+    const trafficLayer = new window.AMap.TrafficLayer({ zIndex: 10 })
+    map.add(trafficLayer)
+    map.setLayers([trafficLayer])
+  }, 4)
+
+  contextMenu.addItem('隐藏路况', () => {
+    const normalLayer = new window.AMap.NormalLayer()
+    map.setLayers([normalLayer])
+  }, 5)
+
+  map.on('rightclick', (e) => {
+    contextMenu.open(map, e.lnglat)
+  })
 }
 
 const updateMarkers = () => {
