@@ -8,20 +8,20 @@
     </header>
     
     <div class="app-body">
-      <aside class="sidebar" :class="{ collapsed: !showMenu }">
+      <aside class="sidebar">
         <nav class="tabs">
           <button :class="{ active: activeTab === 'add' }" @click="activeTab = 'add'">添加</button>
           <button :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">列表</button>
           <button :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
         </nav>
-        
+
         <div class="tab-content">
           <AddLocation v-if="activeTab === 'add'" @added="activeTab = 'list'" />
           <LocationList v-else-if="activeTab === 'list'" />
           <Settings v-else-if="activeTab === 'settings'" />
         </div>
       </aside>
-      
+
       <main class="map-area">
         <MapView />
       </main>
@@ -95,17 +95,13 @@ html, body, #app {
 
 .sidebar {
   width: 280px;
-  background: #fafafa;
-  border-right: 1px solid #e5e5e5;
+  min-width: 280px;
+  background: #fff;
+  border-right: 2px solid #ff0000;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
   flex-shrink: 0;
-}
-
-.sidebar.collapsed {
-  width: 0;
-  overflow: hidden;
+  z-index: 10;
 }
 
 .tabs {
@@ -135,6 +131,7 @@ html, body, #app {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  min-height: 200px;
 }
 
 .map-area {

@@ -1,5 +1,8 @@
 <template>
-  <div ref="mapContainer" class="map-container"></div>
+  <div ref="mapContainer" class="map-container" v-if="settingsStore.mapKey">
+    <div class="map-placeholder">正在加载地图...</div>
+  </div>
+  <div v-else class="map-placeholder">请先在设置中配置地图Key</div>
 </template>
 
 <script setup>
@@ -13,6 +16,7 @@ const locationStore = useLocationStore()
 
 let map = null
 let markers = []
+let mapLoaded = false
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -29,26 +33,25 @@ const loadMapScript = (key) => {
 }
 
 const initMap = async () => {
-  if (!settingsStore.mapKey) {
-    alert('请先在设置中配置地图Key')
-    return
-  }
+  if (!settingsStore.mapKey || mapLoaded) return
 
   try {
     await loadMapScript(settingsStore.mapKey)
+    const placeholder = mapContainer.value.querySelector('.map-placeholder')
+    if (placeholder) placeholder.remove()
     map = new window.AMap.Map(mapContainer.value, {
       zoom: 10,
       center: [116.397428, 39.90923]
     })
+    mapLoaded = true
     updateMarkers()
   } catch (e) {
     console.error('加载地图失败:', e)
-    alert('加载地图失败，请检查Key是否正确')
   }
 }
 
 const updateMarkers = () => {
-  if (!map) return
+  if (!map || !mapLoaded) return
 
   markers.forEach(m => m.setMap(null))
   markers = []
@@ -80,7 +83,7 @@ onMounted(() => {
 })
 
 watch(() => settingsStore.mapKey, (newKey) => {
-  if (newKey) {
+  if (newKey && !mapLoaded) {
     initMap()
   }
 })
@@ -96,5 +99,14 @@ defineExpose({ updateMarkers })
 .map-container {
   width: 100%;
   height: 100%;
+}
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  color: #999;
 }
 </style>
