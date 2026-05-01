@@ -3,91 +3,128 @@
 ## 项目技术栈
 
 - **主框架**：Python + uv
-- **前端**：Vue 3 + Vite
-- **后端**：Flask
+- **前端**：Vue 3 + Vite + Pinia
+- **后端**：Flask + Waitress
 - **桌面端**：PyWebView
-- **地图服务**：高德地图 API / 百度地图 API / Google Maps
+- **地图服务**：高德地图 API（已完成）/ 百度地图 / Google Maps（待实现）
 
 ## 项目结构
 
 ```
-├── frontend/          # Vue 3 前端资源
+├── frontend/                    # Vue 3 前端项目
 │   ├── src/
-│   ├── public/
+│   │   ├── components/         # Vue组件
+│   │   │   ├── AddLocation.vue # 添加位置对话框
+│   │   │   ├── LocationList.vue# 位置列表悬浮卡片
+│   │   │   ├── MapView.vue     # 地图组件
+│   │   │   └── Settings.vue    # 设置对话框
+│   │   ├── stores/             # Pinia状态管理
+│   │   │   ├── locations.js    # 位置数据管理
+│   │   │   └── settings.js     # 设置管理
+│   │   ├── App.vue             # 主组件
+│   │   └── main.js             # 入口文件
+│   ├── dist/                   # 构建产物（由桌面端自动调用）
+│   ├── package.json
 │   └── vite.config.ts
-├── src/               # Python 源码
-│   ├── backend/      # Flask 后端服务
-│   └── desktop/       # PyWebView 桌面端入口
-├── pyproject.toml     # uv 项目配置
-└── uv.lock            # 依赖锁文件
+├── src/                        # Python 源码
+│   ├── backend/
+│   │   └── app.py             # Flask后端服务
+│   └── desktop/
+│       └── main.py            # PyWebView桌面端入口
+├── pyproject.toml              # uv项目配置
+└── uv.lock                     # 依赖锁文件
 ```
 
 ## 开发命令
 
 ### 项目初始化（首次克隆后）
 ```bash
-uv sync        # 安装所有依赖（Python + 前端）
+uv sync        # 安装Python依赖
 ```
 
 ### 前端开发
 ```bash
 cd frontend
-npm install
-npm run dev      # 开发服务器
-npm run build   # 生产构建
+npm install    # 安装前端依赖
+npm run dev    # 开发服务器 (http://localhost:5173)
+npm run build  # 生产构建 (输出到 dist/)
 ```
 
 ### 后端开发
 ```bash
-python src/backend/app.py  # 启动Flask服务
+python src/backend/app.py  # 启动Flask服务 (端口5000)
 ```
 
-### 桌面端运行
+### 桌面端运行（推荐）
 ```bash
-python src/desktop/main.py  # 启动PyWebView应用
+python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗口
 ```
 
-## 地图API配置
+## UI布局说明
 
-- 高德地图：需要在 `frontend` 或 `backend` 中配置高德 Web API Key
-- 百度地图：需要在 `frontend` 或 `backend` 中配置百度地图 API Key
-- Google Maps：需要配置 Google Maps JavaScript API Key
+### 整体布局
+- **左侧功能栏**（56px宽，浅紫色渐变背景）
+  - 上方：添加位置、位置列表图标（SVG）
+  - 下方：设置图标（SVG）
+- **右侧地图区域**：全屏显示地图
 
-API Key 应存储在环境变量或配置文件中，**不要提交到代码仓库**。
+### 交互方式
+1. 点击左侧添加位置/设置图标 → 右侧弹出对话框 → 点击对话框外关闭
+2. 点击左侧位置列表图标 → 左侧悬浮卡片显示位置点信息 → 再次点击图标关闭卡片
+
+## 功能实现状态
+
+### 前端功能 ✅
+1. **添加位置**
+   - 坐标系选择：WGS84 / GCJ-02
+   - 输入方式：手动输入（已完成）、POS文件/日志（待实现）
+   - 坐标格式：不区分经纬度顺序，多个点用 `;` 分割
+
+2. **位置清单**
+   - 树状结构展示分组和点
+   - 分组可展开/折叠
+   - 勾选控制点的显示/隐藏
+   - 支持清空所有数据
+
+3. **设置**
+   - 地图服务商选择（高德/百度/Google）
+   - API Key 密文输入和显示切换
+   - 数据持久化到浏览器 localStorage
+
+4. **地图显示**
+   - 高德地图集成
+   - 根据位置数据自动显示标记点
+   - 自动缩放到合适的视图范围
+
+### 后端功能
+- `/api/health` - 健康检查接口
+- `/` - 提供前端静态页面（Flask 托管 frontend/dist）
+
+## 配色风格
+
+- **主色调**：浅紫色系 (#e8eaf6 → #c5cae9)
+- **强调色**：蓝紫色 (#7986cb, #5c6bc0)
+- **侧边栏**：浅紫色渐变背景 + 白色半透明图标按钮
+- **对话框**：圆角卡片 + 渐变阴影
+- **按钮**：蓝紫色渐变 + 悬停效果
 
 ## 重要约束
 
-1. **前后端通信**：Flask 后端默认运行在 `http://localhost:5000`，前端通过代理或 CORS 访问
-2. **PyWebView 加载地址**：需要确保 Flask 服务已启动，PyWebView 才能正确加载页面
-3. **地图服务商选择**：根据中国大陆使用习惯，推荐优先考虑高德地图或百度地图（Google Maps 在国内访问受限）
-4. **环境变量**：敏感配置（如 API Key）使用 `.env` 文件管理，并加入 `.gitignore`
+1. **前后端通信**：Flask 后端默认运行在 `http://localhost:5000`
+2. **PyWebView 加载**：桌面端自动启动 Flask 服务后再加载页面
+3. **地图服务商**：推荐高德地图（国内访问稳定）
+4. **API Key 管理**：存储在浏览器 localStorage，不提交到代码仓库
 
-## 测试与验证
+## 环境配置
 
-- 前端单元测试：`npm run test`（如配置了 Vitest/Jest）
-- 后端单元测试：`pytest`（如配置了 pytest）
-- 完整桌面端测试：需要先启动 Flask 后端，再运行 PyWebView
+### Windows 开发环境
+- Python 3.11+
+- Node.js 18+
+- uv 包管理器
 
-
-## 功能需求
-**前端*
-1. 支持添加位置
- - 需要选择坐标系(WGS84,GCJ-02)
- - 需要输入位置的方式
-   - 1. 如果是手动输入(默认) 显示一个方框，用于用户输入经纬度位置(框内需做提示:不区分经纬度顺序;多个点以';'分割)
-   - 2. 如果是加载pos文件(指定格式) 显示一个方框用于选择pos文件路径，可以是目录或者文件路径
-   - 3. 如果是扫描日志 显示一个方框用于选择日志文件路径，可以是目录或者文件路径
-2. 支持显示位置清单
- - 树状结构分层分级展示
- - 每一次位置输入将创建一个分组，下一级将显示输入的每一个点，自动编号，如果有打钩则显示，否则隐藏
-
-3. 支持设置
- - 支持输入地图的key，密文显示并持久化
-
-**地图*
-1. 需要支持高德地图，百度地图，google地图选择
-2. 当前先支持高德地图
-
-**后端*
- - 待补充
-
+### 依赖说明
+- Flask + Flask-CORS：后端服务
+- Waitress：生产级 WSGI 服务器
+- PyWebView：桌面端窗口
+- Pinia：前端状态管理
+- Vite：前端构建工具
