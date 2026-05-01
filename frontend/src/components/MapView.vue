@@ -71,8 +71,6 @@ let markers = []
 let mapLoaded = false
 let roadNetLayer = null
 let trafficLayer = null
-let satelliteLayer = null
-let normalLayer = null
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -139,13 +137,10 @@ const initMap = async () => {
 
     map.on('complete', () => {
       console.log('地图加载完成')
-      normalLayer = new window.AMap.NormalLayer()
-      satelliteLayer = new window.AMap.SatelliteLayer()
       roadNetLayer = new window.AMap.RoadNet()
+      map.add(roadNetLayer)
       
-      console.log('地图图层初始化, normalLayer:', normalLayer, 'satelliteLayer:', satelliteLayer)
       mapLoaded = true
-      map.setLayers([normalLayer, roadNetLayer])
       updateMarkers()
       console.log('地图初始化完成, mapLoaded:', mapLoaded)
     })
@@ -186,39 +181,31 @@ const closeContextMenu = () => {
 }
 
 const setMapType = (type) => {
-  console.log('setMapType called, map:', map, 'mapLoaded:', mapLoaded, 'normalLayer:', normalLayer, 'satelliteLayer:', satelliteLayer)
+  console.log('setMapType called, map:', map, 'mapLoaded:', mapLoaded)
   
   mapType.value = type
   closeContextMenu()
   
-  if (!map) {
-    console.warn('地图未初始化: map is null')
+  if (!map || !mapLoaded) {
+    console.warn('地图未初始化')
     return
   }
   
   try {
     if (type === 'satellite') {
-      if (satelliteLayer) {
-        if (roadNetLayer) {
-          map.remove(roadNetLayer)
-          roadNetLayer = null
-        }
-        map.setLayers([satelliteLayer])
-        console.log('切换到卫星地图成功')
-      } else {
-        console.warn('satelliteLayer 未初始化')
+      if (roadNetLayer) {
+        map.remove(roadNetLayer)
+        roadNetLayer = null
       }
+      map.setMapType('satellite')
+      console.log('切换到卫星地图成功')
     } else {
-      if (normalLayer) {
-        map.setLayers([normalLayer])
-        if (showRoadNet.value && !roadNetLayer) {
-          roadNetLayer = new window.AMap.RoadNet()
-          map.add(roadNetLayer)
-        }
-        console.log('切换到标准地图成功')
-      } else {
-        console.warn('normalLayer 未初始化')
+      map.setMapType('normal')
+      if (!roadNetLayer && showRoadNet.value) {
+        roadNetLayer = new window.AMap.RoadNet()
+        map.add(roadNetLayer)
       }
+      console.log('切换到标准地图成功')
     }
   } catch (e) {
     console.error('切换地图类型失败:', e)
