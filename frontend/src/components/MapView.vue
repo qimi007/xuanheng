@@ -228,7 +228,16 @@ const setMapType = (type) => {
 const toggleRoadNet = (show) => {
   showRoadNet.value = show
   closeContextMenu()
-  
+  updateLayers()
+}
+
+const toggleTraffic = (show) => {
+  showTraffic.value = show
+  closeContextMenu()
+  updateLayers()
+}
+
+const updateLayers = () => {
   if (!map || !mapLoaded) return
   
   try {
@@ -241,34 +250,25 @@ const toggleRoadNet = (show) => {
     if (!roadNetLayer) {
       roadNetLayer = new window.AMap.TileLayer.RoadNet()
     }
-    
-    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
-    
-    if (show) {
-      map.setLayers([baseLayer, roadNetLayer])
-    } else {
-      map.setLayers([baseLayer])
-    }
-    console.log(show ? '显示路网' : '隐藏路网')
-  } catch (e) {
-    console.error('切换路网失败:', e)
-  }
-}
-
-const toggleTraffic = (show) => {
-  if (show) {
     if (!trafficLayer) {
       trafficLayer = new window.AMap.TrafficLayer({ zIndex: 100 })
     }
-    map.add(trafficLayer)
-  } else {
-    if (trafficLayer) {
-      map.remove(trafficLayer)
-      trafficLayer = null
+    
+    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
+    const layers = [baseLayer]
+    
+    if (showRoadNet.value) {
+      layers.push(roadNetLayer)
     }
+    if (showTraffic.value) {
+      layers.push(trafficLayer)
+    }
+    
+    map.setLayers(layers)
+    console.log('更新图层:', layers.length, '个')
+  } catch (e) {
+    console.error('更新图层失败:', e)
   }
-  showTraffic.value = show
-  closeContextMenu()
 }
 
 const updateMarkers = () => {
