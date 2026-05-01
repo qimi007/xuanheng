@@ -41,7 +41,7 @@ const initMap = async () => {
     await new Promise((resolve) => {
       window.AMap.plugin([
         'AMap.Scale',
-        'AMap.ToolBar',
+        'AMap.HawkEye',
         'AMap.ControlBar',
         'AMap.Geocoder',
         'AMap.PlaceSearch',
@@ -66,15 +66,21 @@ const initMap = async () => {
     })
 
     map.addControl(new window.AMap.Scale())
-    map.addControl(new window.AMap.ToolBar({
-      position: 'RT',
+
+    map.addControl(new window.AMap.HawkEye({
       visible: true,
-      autoPosition: false,
-      locate: false,
-      liteStyle: false,
-      direction: true,
-      showTitle: true,
-      offset: new window.AMap.Pixel(0, 20)
+      position: 'LB',
+      width: 150,
+      height: 100,
+      open: true
+    }))
+
+    map.addControl(new window.AMap.ControlBar({
+      visible: true,
+      position: 'RT',
+      showZoomBar: true,
+      showControlButton: true,
+      showCompass: true
     }))
 
     mapLoaded = true
