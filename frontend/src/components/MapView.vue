@@ -69,7 +69,7 @@ const initMap = async () => {
 
     map.addControl(new window.AMap.HawkEye({
       visible: true,
-      position: 'LB',
+      position: 'RB',
       width: 150,
       height: 100,
       open: true
@@ -78,6 +78,7 @@ const initMap = async () => {
     map.addControl(new window.AMap.ControlBar({
       visible: true,
       position: 'RT',
+      offset: new window.AMap.Pixel(-20, 30),
       showZoomBar: true,
       showControlButton: true,
       showCompass: true
