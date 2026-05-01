@@ -1,23 +1,31 @@
 <template>
   <div class="app-container">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2>地图工具</h2>
-      </div>
-      <nav class="sidebar-nav">
-        <button :class="{ active: activeTab === 'add' }" @click="activeTab = 'add'">添加位置</button>
-        <button :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">位置清单</button>
-        <button :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
-      </nav>
-      <div class="sidebar-content">
-        <AddLocation v-if="activeTab === 'add'" />
-        <LocationList v-else-if="activeTab === 'list'" />
-        <Settings v-else-if="activeTab === 'settings'" />
-      </div>
-    </aside>
-    <main class="main-content">
-      <MapView ref="mapRef" />
-    </main>
+    <header class="app-header">
+      <h1>地图工具</h1>
+      <button class="menu-btn" @click="toggleMenu">
+        {{ showMenu ? '✕' : '☰' }}
+      </button>
+    </header>
+    
+    <div class="app-body">
+      <aside class="sidebar" :class="{ collapsed: !showMenu }">
+        <nav class="tabs">
+          <button :class="{ active: activeTab === 'add' }" @click="activeTab = 'add'">添加</button>
+          <button :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">列表</button>
+          <button :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
+        </nav>
+        
+        <div class="tab-content">
+          <AddLocation v-if="activeTab === 'add'" @added="activeTab = 'list'" />
+          <LocationList v-else-if="activeTab === 'list'" />
+          <Settings v-else-if="activeTab === 'settings'" />
+        </div>
+      </aside>
+      
+      <main class="map-area">
+        <MapView />
+      </main>
+    </div>
   </div>
 </template>
 
@@ -29,7 +37,11 @@ import LocationList from './components/LocationList.vue'
 import Settings from './components/Settings.vue'
 
 const activeTab = ref('add')
-const mapRef = ref(null)
+const showMenu = ref(true)
+
+const toggleMenu = () => {
+  showMenu.value = !showMenu.value
+}
 </script>
 
 <style>
@@ -41,62 +53,91 @@ const mapRef = ref(null)
 
 html, body, #app {
   height: 100%;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-.sidebar {
-  width: 320px;
-  background: #f5f5f5;
-  border-right: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-header {
-  padding: 16px;
-  background: #333;
+.app-header {
+  height: 48px;
+  background: #1a1a1a;
   color: #fff;
-}
-
-.sidebar-header h2 {
-  font-size: 18px;
-}
-
-.sidebar-nav {
   display: flex;
-  border-bottom: 1px solid #ddd;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
 }
 
-.sidebar-nav button {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  background: #fff;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.sidebar-nav button.active {
-  background: #e0e0e0;
+.app-header h1 {
+  font-size: 16px;
   font-weight: 500;
 }
 
-.sidebar-nav button:hover {
-  background: #f0f0f0;
+.menu-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
-.sidebar-content {
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  background: #fafafa;
+  border-right: 1px solid #e5e5e5;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed {
+  width: 0;
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e5e5;
+  background: #fff;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.tabs button.active {
+  color: #1a1a1a;
+  font-weight: 500;
+  border-bottom: 2px solid #1a1a1a;
+}
+
+.tab-content {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
 }
 
-.main-content {
+.map-area {
   flex: 1;
   position: relative;
 }

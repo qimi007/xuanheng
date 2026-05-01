@@ -1,30 +1,34 @@
 <template>
   <div class="location-list">
-    <div class="list-header">
-      <h3>位置清单</h3>
-      <button v-if="locationStore.locationGroups.length > 0" class="btn-clear" @click="handleClear">清空</button>
+    <div class="list-header" v-if="locationStore.locationGroups.length > 0">
+      <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
+      <button class="btn-clear" @click="handleClear">清空</button>
     </div>
 
     <div v-if="locationStore.locationGroups.length === 0" class="empty">
-      暂无位置数据
+      <p>暂无位置数据</p>
+      <p class="empty-hint">请先添加位置</p>
     </div>
 
-    <div v-else class="tree-view">
-      <div v-for="group in locationStore.locationGroups" :key="group.id" class="group-item">
-        <div class="group-header" @click="locationStore.toggleGroup(group.id)">
+    <div v-else class="groups">
+      <div v-for="group in locationStore.locationGroups" :key="group.id" class="group">
+        <div class="group-row" @click="locationStore.toggleGroup(group.id)">
           <span class="expand-icon">{{ group.visible ? '▼' : '▶' }}</span>
           <span class="group-name">{{ group.name }}</span>
-          <span class="group-info">({{ group.points.length }}个点, {{ group.coordType }})</span>
+          <span class="group-count">{{ group.points.length }}点</span>
         </div>
-        <div v-if="group.visible" class="points-list">
-          <div v-for="point in group.points" :key="point.id" class="point-item">
-            <input
-              type="checkbox"
-              :checked="locationStore.isPointVisible(point.id)"
-              @change="locationStore.togglePoint(point.id)"
-            />
-            <span class="point-name">{{ point.name }}</span>
-            <span class="point-coord">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
+        
+        <div v-if="group.visible" class="points">
+          <div v-for="point in group.points" :key="point.id" class="point-row">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                :checked="locationStore.isPointVisible(point.id)"
+                @change="locationStore.togglePoint(point.id)"
+              />
+              <span class="point-name">{{ point.name }}</span>
+            </label>
+            <span class="point-coord">{{ point.lng.toFixed(4) }}, {{ point.lat.toFixed(4) }}</span>
           </div>
         </div>
       </div>
@@ -38,7 +42,7 @@ import { useLocationStore } from '../stores/locations'
 const locationStore = useLocationStore()
 
 const handleClear = () => {
-  if (confirm('确定清空所有位置数据？')) {
+  if (confirm('确定清空所有位置？')) {
     locationStore.clearAll()
   }
 }
@@ -48,7 +52,7 @@ const handleClear = () => {
 .location-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .list-header {
@@ -57,96 +61,112 @@ const handleClear = () => {
   align-items: center;
 }
 
-.list-header h3 {
-  font-size: 16px;
+.count {
+  font-size: 12px;
+  color: #666;
 }
 
 .btn-clear {
-  padding: 4px 12px;
-  background: #fff;
+  padding: 4px 10px;
+  background: none;
   border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
-}
-
-.btn-clear:hover {
-  background: #f0f0f0;
+  font-size: 11px;
+  color: #666;
 }
 
 .empty {
   text-align: center;
+  padding: 40px 20px;
   color: #999;
-  padding: 40px 0;
 }
 
-.tree-view {
+.empty p {
+  margin: 0;
+}
+
+.empty-hint {
+  font-size: 12px;
+  margin-top: 8px !important;
+}
+
+.groups {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.group-item {
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.group {
   background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.group-header {
+.group-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 10px 12px;
+  background: #fafafa;
   cursor: pointer;
-  background: #f9f9f9;
 }
 
-.group-header:hover {
+.group-row:hover {
   background: #f0f0f0;
 }
 
 .expand-icon {
   font-size: 10px;
-  color: #666;
+  color: #888;
 }
 
 .group-name {
+  flex: 1;
+  font-size: 13px;
   font-weight: 500;
 }
 
-.group-info {
-  font-size: 12px;
-  color: #999;
+.group-count {
+  font-size: 11px;
+  color: #888;
 }
 
-.points-list {
-  border-top: 1px solid #eee;
+.points {
+  border-top: 1px solid #f0f0f0;
 }
 
-.point-item {
+.point-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid #f5f5f5;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f8f8f8;
 }
 
-.point-item:last-child {
+.point-row:last-child {
   border-bottom: none;
 }
 
-.point-item input[type="checkbox"] {
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox-label input {
   cursor: pointer;
 }
 
 .point-name {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .point-coord {
-  font-size: 11px;
+  font-size: 10px;
   color: #999;
   font-family: monospace;
-  margin-left: auto;
 }
 </style>

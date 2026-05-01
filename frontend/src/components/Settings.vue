@@ -1,35 +1,32 @@
 <template>
   <div class="settings">
-    <h3>设置</h3>
-
-    <div class="form-group">
-      <label>地图服务商</label>
-      <select v-model="provider" @change="handleProviderChange">
+    <div class="form-item">
+      <label class="form-label">地图服务商</label>
+      <select v-model="provider" class="form-select" @change="key = ''">
         <option value="amap">高德地图</option>
         <option value="bmap">百度地图</option>
         <option value="google">Google Maps</option>
       </select>
     </div>
 
-    <div class="form-group">
-      <label>地图Key</label>
-      <div class="input-wrapper">
+    <div class="form-item">
+      <label class="form-label">API Key</label>
+      <div class="input-wrap">
         <input
           :type="showKey ? 'text' : 'password'"
           v-model="key"
-          placeholder="输入地图API Key"
+          class="form-input"
+          placeholder="请输入地图API Key"
         />
-        <button class="toggle-visibility" @click="showKey = !showKey">
+        <button class="toggle-btn" @click="showKey = !showKey">
           {{ showKey ? '隐藏' : '显示' }}
         </button>
       </div>
     </div>
 
-    <button class="btn-save" @click="handleSave">保存</button>
+    <button class="btn-save" @click="handleSave">保存设置</button>
 
-    <div class="tips">
-      <p>提示：Key将保存在浏览器本地存储中</p>
-    </div>
+    <p class="tips">API Key 将安全存储在本地浏览器中</p>
   </div>
 </template>
 
@@ -48,10 +45,6 @@ onMounted(() => {
   key.value = settingsStore.mapKey
 })
 
-const handleProviderChange = () => {
-  key.value = ''
-}
-
 const handleSave = () => {
   settingsStore.saveSettings(provider.value, key.value)
   alert('设置已保存')
@@ -62,76 +55,70 @@ const handleSave = () => {
 .settings {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.settings h3 {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.form-group {
+.form-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.form-group label {
-  font-size: 14px;
+.form-label {
+  font-size: 12px;
   font-weight: 500;
   color: #333;
 }
 
-.form-group select,
-.form-group input {
-  padding: 8px;
+.form-select,
+.form-input {
+  padding: 10px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
-.input-wrapper {
+.input-wrap {
   display: flex;
   gap: 8px;
 }
 
-.input-wrapper input {
+.input-wrap input {
   flex: 1;
 }
 
-.toggle-visibility {
-  padding: 8px 12px;
-  background: #fff;
+.toggle-btn {
+  padding: 0 12px;
+  background: #f5f5f5;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
+  color: #666;
 }
 
-.toggle-visibility:hover {
-  background: #f0f0f0;
+.toggle-btn:hover {
+  background: #eee;
 }
 
 .btn-save {
-  padding: 10px;
-  background: #333;
+  padding: 12px;
+  background: #1a1a1a;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .btn-save:hover {
-  background: #555;
+  background: #333;
 }
 
 .tips {
-  font-size: 12px;
+  font-size: 11px;
   color: #999;
-}
-
-.tips p {
-  margin: 0;
+  text-align: center;
 }
 </style>
