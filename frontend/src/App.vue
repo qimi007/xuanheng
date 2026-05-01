@@ -90,7 +90,7 @@ html, body, #app {
 /* 左侧功能栏 */
 .sidebar {
   width: 56px;
-  background: #1a1a1a;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -111,8 +111,8 @@ html, body, #app {
   width: 40px;
   height: 40px;
   border: none;
-  background: transparent;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -121,11 +121,13 @@ html, body, #app {
 }
 
 .icon-btn:hover {
-  background: #333;
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
 }
 
 .icon-btn.active {
-  background: #333;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .icon-btn .icon {
@@ -168,12 +170,12 @@ html, body, #app {
 
 .dialog {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 24px;
-  min-width: 360px;
+  min-width: 380px;
   max-width: 90%;
   max-height: 80%;
   overflow-y: auto;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
 }
 </style>

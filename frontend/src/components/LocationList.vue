@@ -69,22 +69,30 @@ const handleClear = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid #f0f0f5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .card-header h3 {
   font-size: 14px;
   font-weight: 500;
+  color: #fff;
 }
 
 .close-btn {
   width: 24px;
   height: 24px;
   border: none;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.2);
   cursor: pointer;
   font-size: 14px;
-  color: #666;
+  color: #fff;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .list-content {
@@ -109,12 +117,17 @@ const handleClear = () => {
 
 .btn-clear {
   padding: 4px 10px;
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
-  color: #666;
+  color: #667eea;
+  transition: all 0.2s;
+}
+
+.btn-clear:hover {
+  background: rgba(102, 126, 234, 0.2);
 }
 
 .empty {
@@ -140,18 +153,24 @@ const handleClear = () => {
 
 .group {
   background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border: 1px solid #f0f0f5;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .group-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  background: #fafafa;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #f8f8fc 0%, #f0f0f8 100%);
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.group-row:hover {
+  background: linear-gradient(135deg, #f0f0f8 0%, #e8e8f5 100%);
 }
 
 .group-row:hover {

@@ -82,10 +82,15 @@ const handleSave = () => {
   width: 28px;
   height: 28px;
   border: none;
-  background: #f5f5f5;
-  border-radius: 6px;
+  background: #f0f0f5;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #e0e0e8;
 }
 
 .dialog-content {
@@ -109,9 +114,19 @@ const handleSave = () => {
 .form-select,
 .form-input {
   padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid #e0e0e8;
+  border-radius: 8px;
   font-size: 13px;
+  background: #f8f8fc;
+  transition: all 0.2s;
+}
+
+.form-select:focus,
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .input-wrap {
@@ -139,17 +154,19 @@ const handleSave = () => {
 
 .btn-save {
   padding: 12px;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
+  transition: all 0.2s;
 }
 
 .btn-save:hover {
-  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .tips {
