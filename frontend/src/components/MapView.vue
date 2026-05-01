@@ -182,13 +182,22 @@ const closeContextMenu = () => {
 }
 
 const setMapType = (type) => {
-  if (type === 'satellite') {
-    map.setLayers([satelliteLayer, roadNetLayer])
-  } else {
-    map.setLayers([normalLayer, roadNetLayer])
-  }
   mapType.value = type
   closeContextMenu()
+  
+  if (type === 'satellite') {
+    if (roadNetLayer) {
+      map.remove(roadNetLayer)
+      roadNetLayer = null
+    }
+    map.setLayers([satelliteLayer])
+  } else {
+    map.setLayers([normalLayer])
+    if (!roadNetLayer && showRoadNet.value) {
+      roadNetLayer = new window.AMap.RoadNet()
+      map.add(roadNetLayer)
+    }
+  }
 }
 
 const toggleRoadNet = (show) => {
