@@ -158,9 +158,9 @@ const handleAdd = () => {
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #7986cb;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(121, 134, 203, 0.2);
 }
 
 .form-textarea {
@@ -192,14 +192,14 @@ const handleAdd = () => {
 }
 
 .btn-group button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
   color: #fff;
   border-color: transparent;
 }
 
 .btn-submit {
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
   color: #fff;
   border: none;
   border-radius: 6px;

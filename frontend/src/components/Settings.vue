@@ -124,9 +124,9 @@ const handleSave = () => {
 .form-select:focus,
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #7986cb;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(121, 134, 203, 0.2);
 }
 
 .input-wrap {
@@ -154,7 +154,7 @@ const handleSave = () => {
 
 .btn-save {
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -166,7 +166,7 @@ const handleSave = () => {
 
 .btn-save:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(92, 107, 192, 0.4);
 }
 
 .tips {

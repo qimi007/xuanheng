@@ -4,15 +4,15 @@
     <aside class="sidebar">
       <div class="sidebar-top">
         <button class="icon-btn" :class="{ active: activeFeature === 'add' }" @click="toggleFeature('add')" title="添加位置">
-          <span class="icon">📍</span>
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
         </button>
         <button class="icon-btn" :class="{ active: activeFeature === 'list' }" @click="toggleFeature('list')" title="位置列表">
-          <span class="icon">📋</span>
+          <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
         </button>
       </div>
       <div class="sidebar-bottom">
         <button class="icon-btn" :class="{ active: activeFeature === 'settings' }" @click="toggleFeature('settings')" title="设置">
-          <span class="icon">⚙️</span>
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         </button>
       </div>
     </aside>
@@ -90,7 +90,7 @@ html, body, #app {
 /* 左侧功能栏 */
 .sidebar {
   width: 56px;
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #e8eaf6 0%, #c5cae9 100%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -111,7 +111,7 @@ html, body, #app {
   width: 40px;
   height: 40px;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 12px;
   cursor: pointer;
   display: flex;
@@ -121,17 +121,19 @@ html, body, #app {
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.9);
   transform: scale(1.05);
 }
 
 .icon-btn.active {
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
 }
 
-.icon-btn .icon {
-  font-size: 20px;
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: #5c6bc0;
 }
 
 /* 悬浮卡片 */

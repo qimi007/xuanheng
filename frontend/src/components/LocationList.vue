@@ -69,30 +69,30 @@ const handleClear = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f5;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: 1px solid #e8eaf6;
+  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
 }
 
 .card-header h3 {
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
+  color: #5c6bc0;
 }
 
 .close-btn {
   width: 24px;
   height: 24px;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(92, 107, 192, 0.1);
   cursor: pointer;
   font-size: 14px;
-  color: #fff;
+  color: #5c6bc0;
   border-radius: 6px;
   transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(92, 107, 192, 0.2);
 }
 
 .list-content {
@@ -117,17 +117,17 @@ const handleClear = () => {
 
 .btn-clear {
   padding: 4px 10px;
-  background: rgba(102, 126, 234, 0.1);
-  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: rgba(92, 107, 192, 0.1);
+  border: 1px solid rgba(92, 107, 192, 0.3);
   border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
-  color: #667eea;
+  color: #5c6bc0;
   transition: all 0.2s;
 }
 
 .btn-clear:hover {
-  background: rgba(102, 126, 234, 0.2);
+  background: rgba(92, 107, 192, 0.2);
 }
 
 .empty {
