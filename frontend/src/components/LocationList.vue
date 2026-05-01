@@ -1,34 +1,41 @@
 <template>
   <div class="location-list">
-    <div class="list-header" v-if="locationStore.locationGroups.length > 0">
-      <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
-      <button class="btn-clear" @click="handleClear">清空</button>
+    <div class="card-header">
+      <h3>位置列表</h3>
+      <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
-    <div v-if="locationStore.locationGroups.length === 0" class="empty">
-      <p>暂无位置数据</p>
-      <p class="empty-hint">请先添加位置</p>
-    </div>
+    <div class="list-content">
+      <div class="list-header" v-if="locationStore.locationGroups.length > 0">
+        <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
+        <button class="btn-clear" @click="handleClear">清空</button>
+      </div>
 
-    <div v-else class="groups">
-      <div v-for="group in locationStore.locationGroups" :key="group.id" class="group">
-        <div class="group-row" @click="locationStore.toggleGroup(group.id)">
-          <span class="expand-icon">{{ group.visible ? '▼' : '▶' }}</span>
-          <span class="group-name">{{ group.name }}</span>
-          <span class="group-count">{{ group.points.length }}点</span>
-        </div>
-        
-        <div v-if="group.visible" class="points">
-          <div v-for="point in group.points" :key="point.id" class="point-row">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                :checked="locationStore.isPointVisible(point.id)"
-                @change="locationStore.togglePoint(point.id)"
-              />
-              <span class="point-name">{{ point.name }}</span>
-            </label>
-            <span class="point-coord">{{ point.lng.toFixed(4) }}, {{ point.lat.toFixed(4) }}</span>
+      <div v-if="locationStore.locationGroups.length === 0" class="empty">
+        <p>暂无位置数据</p>
+        <p class="empty-hint">请先添加位置</p>
+      </div>
+
+      <div v-else class="groups">
+        <div v-for="group in locationStore.locationGroups" :key="group.id" class="group">
+          <div class="group-row" @click="locationStore.toggleGroup(group.id)">
+            <span class="expand-icon">{{ group.visible ? '▼' : '▶' }}</span>
+            <span class="group-name">{{ group.name }}</span>
+            <span class="group-count">{{ group.points.length }}点</span>
+          </div>
+
+          <div v-if="group.visible" class="points">
+            <div v-for="point in group.points" :key="point.id" class="point-row">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  :checked="locationStore.isPointVisible(point.id)"
+                  @change="locationStore.togglePoint(point.id)"
+                />
+                <span class="point-name">{{ point.name }}</span>
+              </label>
+              <span class="point-coord">{{ point.lng.toFixed(4) }}, {{ point.lat.toFixed(4) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -38,6 +45,8 @@
 
 <script setup>
 import { useLocationStore } from '../stores/locations'
+
+defineEmits(['close'])
 
 const locationStore = useLocationStore()
 
@@ -50,6 +59,38 @@ const handleClear = () => {
 
 <style scoped>
 .location-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.card-header h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.close-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+}
+
+.list-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;

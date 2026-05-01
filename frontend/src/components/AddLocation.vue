@@ -1,48 +1,54 @@
 <template>
   <div class="add-location">
-    <div class="form-section">
-      <label class="form-label">坐标系</label>
-      <select v-model="coordType" class="form-select">
-        <option value="wgs84">WGS84 (GPS坐标)</option>
-        <option value="gcj02">GCJ-02 (国测局坐标)</option>
-      </select>
+    <div class="dialog-header">
+      <h3>添加位置</h3>
     </div>
 
-    <div class="form-section">
-      <label class="form-label">输入方式</label>
-      <div class="btn-group">
-        <button :class="{ active: inputMethod === 'manual' }" @click="inputMethod = 'manual'">手动</button>
-        <button :class="{ active: inputMethod === 'pos' }" @click="inputMethod = 'pos'">POS文件</button>
-        <button :class="{ active: inputMethod === 'log' }" @click="inputMethod = 'log'">日志</button>
+    <div class="dialog-content">
+      <div class="form-section">
+        <label class="form-label">坐标系</label>
+        <select v-model="coordType" class="form-select">
+          <option value="wgs84">WGS84 (GPS坐标)</option>
+          <option value="gcj02">GCJ-02 (国测局坐标)</option>
+        </select>
       </div>
-    </div>
 
-    <div v-if="inputMethod === 'manual'" class="form-section">
-      <label class="form-label">坐标输入</label>
-      <textarea
-        v-model="coordinates"
-        class="form-textarea"
-        placeholder="示例: 116.397428,39.90923; 116.397428,39.91923"
-      ></textarea>
-      <p class="form-hint">多个点用分号(;)分隔，不区分经纬度顺序</p>
-    </div>
+      <div class="form-section">
+        <label class="form-label">输入方式</label>
+        <div class="btn-group">
+          <button :class="{ active: inputMethod === 'manual' }" @click="inputMethod = 'manual'">手动</button>
+          <button :class="{ active: inputMethod === 'pos' }" @click="inputMethod = 'pos'">POS文件</button>
+          <button :class="{ active: inputMethod === 'log' }" @click="inputMethod = 'log'">日志</button>
+        </div>
+      </div>
 
-    <div v-else class="form-section">
-      <label class="form-label">文件路径</label>
-      <input
-        type="text"
-        v-model="filePath"
-        class="form-input"
-        :placeholder="inputMethod === 'pos' ? '输入POS文件路径' : '输入日志文件路径'"
-      />
-    </div>
+      <div v-if="inputMethod === 'manual'" class="form-section">
+        <label class="form-label">坐标输入</label>
+        <textarea
+          v-model="coordinates"
+          class="form-textarea"
+          placeholder="示例: 116.397428,39.90923; 116.397428,39.91923"
+        ></textarea>
+        <p class="form-hint">多个点用分号(;)分隔，不区分经纬度顺序</p>
+      </div>
 
-    <div class="form-section">
-      <label class="form-label">分组名称</label>
-      <input type="text" v-model="groupName" class="form-input" placeholder="可选名称" />
-    </div>
+      <div v-else class="form-section">
+        <label class="form-label">文件路径</label>
+        <input
+          type="text"
+          v-model="filePath"
+          class="form-input"
+          :placeholder="inputMethod === 'pos' ? '输入POS文件路径' : '输入日志文件路径'"
+        />
+      </div>
 
-    <button class="btn-submit" @click="handleAdd">添加位置</button>
+      <div class="form-section">
+        <label class="form-label">分组名称</label>
+        <input type="text" v-model="groupName" class="form-input" placeholder="可选名称" />
+      </div>
+
+      <button class="btn-submit" @click="handleAdd">添加位置</button>
+    </div>
   </div>
 </template>
 
@@ -108,7 +114,21 @@ const handleAdd = () => {
 .add-location {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+}
+
+.dialog-header {
+  margin-bottom: 16px;
+}
+
+.dialog-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .form-section {

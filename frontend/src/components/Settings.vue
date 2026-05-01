@@ -1,38 +1,47 @@
 <template>
   <div class="settings">
-    <div class="form-item">
-      <label class="form-label">地图服务商</label>
-      <select v-model="provider" class="form-select" @change="key = ''">
-        <option value="amap">高德地图</option>
-        <option value="bmap">百度地图</option>
-        <option value="google">Google Maps</option>
-      </select>
+    <div class="dialog-header">
+      <h3>设置</h3>
+      <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
-    <div class="form-item">
-      <label class="form-label">API Key</label>
-      <div class="input-wrap">
-        <input
-          :type="showKey ? 'text' : 'password'"
-          v-model="key"
-          class="form-input"
-          placeholder="请输入地图API Key"
-        />
-        <button class="toggle-btn" @click="showKey = !showKey">
-          {{ showKey ? '隐藏' : '显示' }}
-        </button>
+    <div class="dialog-content">
+      <div class="form-item">
+        <label class="form-label">地图服务商</label>
+        <select v-model="provider" class="form-select" @change="key = ''">
+          <option value="amap">高德地图</option>
+          <option value="bmap">百度地图</option>
+          <option value="google">Google Maps</option>
+        </select>
       </div>
+
+      <div class="form-item">
+        <label class="form-label">API Key</label>
+        <div class="input-wrap">
+          <input
+            :type="showKey ? 'text' : 'password'"
+            v-model="key"
+            class="form-input"
+            placeholder="请输入地图API Key"
+          />
+          <button class="toggle-btn" @click="showKey = !showKey">
+            {{ showKey ? '隐藏' : '显示' }}
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-save" @click="handleSave">保存设置</button>
+
+      <p class="tips">API Key 将安全存储在本地浏览器中</p>
     </div>
-
-    <button class="btn-save" @click="handleSave">保存设置</button>
-
-    <p class="tips">API Key 将安全存储在本地浏览器中</p>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSettingsStore } from '../stores/settings'
+
+defineEmits(['close'])
 
 const settingsStore = useSettingsStore()
 
@@ -55,7 +64,34 @@ const handleSave = () => {
 .settings {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dialog-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.close-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .form-item {

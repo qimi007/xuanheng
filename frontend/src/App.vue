@@ -1,30 +1,38 @@
 <template>
   <div class="app-container">
-    <header class="app-header">
-      <h1>地图工具</h1>
-      <button class="menu-btn" @click="toggleMenu">
-        {{ showMenu ? '✕' : '☰' }}
-      </button>
-    </header>
-    
-    <div class="app-body">
-      <aside class="sidebar">
-        <nav class="tabs">
-          <button :class="{ active: activeTab === 'add' }" @click="activeTab = 'add'">添加</button>
-          <button :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">列表</button>
-          <button :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
-        </nav>
+    <!-- 左侧功能栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <button class="icon-btn" :class="{ active: activeFeature === 'add' }" @click="toggleFeature('add')" title="添加位置">
+          <span class="icon">📍</span>
+        </button>
+        <button class="icon-btn" :class="{ active: activeFeature === 'list' }" @click="toggleFeature('list')" title="位置列表">
+          <span class="icon">📋</span>
+        </button>
+      </div>
+      <div class="sidebar-bottom">
+        <button class="icon-btn" :class="{ active: activeFeature === 'settings' }" @click="toggleFeature('settings')" title="设置">
+          <span class="icon">⚙️</span>
+        </button>
+      </div>
+    </aside>
 
-        <div class="tab-content">
-          <AddLocation v-if="activeTab === 'add'" @added="activeTab = 'list'" />
-          <LocationList v-else-if="activeTab === 'list'" />
-          <Settings v-else-if="activeTab === 'settings'" />
-        </div>
-      </aside>
+    <!-- 悬浮卡片：位置列表 -->
+    <div class="float-card" v-if="showListCard">
+      <LocationList @close="showListCard = false" />
+    </div>
 
-      <main class="map-area">
-        <MapView />
-      </main>
+    <!-- 右侧地图区域 -->
+    <main class="main-area">
+      <MapView />
+    </main>
+
+    <!-- 右侧对话框遮罩 -->
+    <div class="dialog-overlay" v-if="showDialog" @click="closeDialog">
+      <div class="dialog" @click.stop>
+        <AddLocation v-if="activeFeature === 'add'" @added="closeDialog" />
+        <Settings v-else-if="activeFeature === 'settings'" @close="closeDialog" />
+      </div>
     </div>
   </div>
 </template>
@@ -36,11 +44,28 @@ import AddLocation from './components/AddLocation.vue'
 import LocationList from './components/LocationList.vue'
 import Settings from './components/Settings.vue'
 
-const activeTab = ref('add')
-const showMenu = ref(true)
+const activeFeature = ref(null)
+const showDialog = ref(false)
+const showListCard = ref(false)
 
-const toggleMenu = () => {
-  showMenu.value = !showMenu.value
+const toggleFeature = (feature) => {
+  if (feature === 'list') {
+    showListCard.value = !showListCard.value
+    activeFeature.value = showListCard.value ? 'list' : null
+  } else {
+    if (activeFeature.value === feature && showDialog.value) {
+      showDialog.value = false
+      activeFeature.value = null
+    } else {
+      activeFeature.value = feature
+      showDialog.value = true
+    }
+  }
+}
+
+const closeDialog = () => {
+  showDialog.value = false
+  activeFeature.value = null
 }
 </script>
 
@@ -58,84 +83,97 @@ html, body, #app {
 
 .app-container {
   display: flex;
-  flex-direction: column;
   height: 100vh;
+  position: relative;
 }
 
-.app-header {
-  height: 48px;
+/* 左侧功能栏 */
+.sidebar {
+  width: 56px;
   background: #1a1a1a;
-  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px 0;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.sidebar-top,
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  flex-shrink: 0;
-}
-
-.app-header h1 {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.menu-btn {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px 8px;
-}
-
-.app-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.sidebar {
-  width: 280px;
-  min-width: 280px;
-  background: #fff;
-  border-right: 2px solid #ff0000;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-.tabs {
-  display: flex;
-  border-bottom: 1px solid #e5e5e5;
-  background: #fff;
-}
-
-.tabs button {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 13px;
-  color: #666;
+  justify-content: center;
   transition: all 0.2s;
 }
 
-.tabs button.active {
-  color: #1a1a1a;
-  font-weight: 500;
-  border-bottom: 2px solid #1a1a1a;
+.icon-btn:hover {
+  background: #333;
 }
 
-.tab-content {
-  flex: 1;
+.icon-btn.active {
+  background: #333;
+}
+
+.icon-btn .icon {
+  font-size: 20px;
+}
+
+/* 悬浮卡片 */
+.float-card {
+  position: absolute;
+  left: 56px;
+  top: 0;
+  width: 280px;
+  height: 100%;
+  background: #fff;
+  border-right: 1px solid #e5e5e5;
+  z-index: 90;
   overflow-y: auto;
-  padding: 16px;
-  min-height: 200px;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
 }
 
-.map-area {
+/* 右侧地图区域 */
+.main-area {
   flex: 1;
   position: relative;
+}
+
+/* 右侧对话框遮罩 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 360px;
+  max-width: 90%;
+  max-height: 80%;
+  overflow-y: auto;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 </style>
