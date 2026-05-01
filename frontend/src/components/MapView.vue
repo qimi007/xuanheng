@@ -41,7 +41,8 @@ const initMap = async () => {
     await new Promise((resolve) => {
       window.AMap.plugin([
         'AMap.Scale',
-        'AMap.HawkEye',
+        'AMap.OverLooking',
+        'AMap.MapType',
         'AMap.ControlBar',
         'AMap.Geocoder',
         'AMap.PlaceSearch',
@@ -67,22 +68,26 @@ const initMap = async () => {
 
     map.addControl(new window.AMap.Scale())
 
-    map.addControl(new window.AMap.HawkEye({
-      visible: true,
-      position: 'RB',
-      width: 150,
-      height: 100,
-      open: true
-    }))
-
-    map.addControl(new window.AMap.ControlBar({
+    const controlBar = new window.AMap.ControlBar({
       visible: true,
       position: 'RT',
       offset: new window.AMap.Pixel(-20, 30),
       showZoomBar: true,
       showControlButton: true,
       showCompass: true
-    }))
+    })
+    map.addControl(controlBar)
+
+    const mapType = new window.AMap.MapType({
+      visible: true,
+      position: 'RT',
+      offset: new window.AMap.Pixel(-20, 150),
+      showRoad: true,
+      showTraffic: false
+    })
+    map.addControl(mapType)
+
+    console.log('已添加控件:', controlBar, mapType)
 
     mapLoaded = true
     updateMarkers()
