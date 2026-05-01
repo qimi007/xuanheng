@@ -141,10 +141,15 @@ const initMap = async () => {
     satelliteLayer = new window.AMap.SatelliteLayer()
     roadNetLayer = new window.AMap.RoadNet()
     
-    map.setLayers([normalLayer, roadNetLayer])
-
-    mapLoaded = true
-    updateMarkers()
+    setTimeout(() => {
+      try {
+        map.setLayers([normalLayer, roadNetLayer])
+      } catch (e) {
+        console.warn('设置图层失败:', e)
+      }
+      mapLoaded = true
+      updateMarkers()
+    }, 100)
   } catch (e) {
     console.error('加载地图失败:', e)
   }
