@@ -137,15 +137,18 @@ const initMap = async () => {
       showCompass: true
     }))
 
-    normalLayer = new window.AMap.NormalLayer()
-    satelliteLayer = new window.AMap.SatelliteLayer()
-    roadNetLayer = new window.AMap.RoadNet()
-    
-    console.log('地图图层初始化, normalLayer:', normalLayer, 'satelliteLayer:', satelliteLayer)
-    mapLoaded = true
-    map.setLayers([normalLayer, roadNetLayer])
-    updateMarkers()
-    console.log('地图初始化完成, mapLoaded:', mapLoaded)
+    map.on('complete', () => {
+      console.log('地图加载完成')
+      normalLayer = new window.AMap.NormalLayer()
+      satelliteLayer = new window.AMap.SatelliteLayer()
+      roadNetLayer = new window.AMap.RoadNet()
+      
+      console.log('地图图层初始化, normalLayer:', normalLayer, 'satelliteLayer:', satelliteLayer)
+      mapLoaded = true
+      map.setLayers([normalLayer, roadNetLayer])
+      updateMarkers()
+      console.log('地图初始化完成, mapLoaded:', mapLoaded)
+    })
   } catch (e) {
     console.error('加载地图失败:', e)
   }
