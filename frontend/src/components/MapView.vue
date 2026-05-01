@@ -71,6 +71,8 @@ let markers = []
 let mapLoaded = false
 let roadNetLayer = null
 let trafficLayer = null
+let satelliteLayer = null
+let normalLayer = null
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -135,8 +137,11 @@ const initMap = async () => {
       showCompass: true
     }))
 
+    normalLayer = new window.AMap.NormalLayer()
+    satelliteLayer = new window.AMap.SatelliteLayer()
     roadNetLayer = new window.AMap.RoadNet()
-    map.add(roadNetLayer)
+    
+    map.setLayers([normalLayer, roadNetLayer])
 
     mapLoaded = true
     updateMarkers()
@@ -177,7 +182,11 @@ const closeContextMenu = () => {
 }
 
 const setMapType = (type) => {
-  map.setMapType(type)
+  if (type === 'satellite') {
+    map.setLayers([satelliteLayer, roadNetLayer])
+  } else {
+    map.setLayers([normalLayer, roadNetLayer])
+  }
   mapType.value = type
   closeContextMenu()
 }
