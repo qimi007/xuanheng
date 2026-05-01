@@ -141,9 +141,11 @@ const initMap = async () => {
     satelliteLayer = new window.AMap.SatelliteLayer()
     roadNetLayer = new window.AMap.RoadNet()
     
+    console.log('地图图层初始化, normalLayer:', normalLayer, 'satelliteLayer:', satelliteLayer)
     mapLoaded = true
     map.setLayers([normalLayer, roadNetLayer])
     updateMarkers()
+    console.log('地图初始化完成, mapLoaded:', mapLoaded)
   } catch (e) {
     console.error('加载地图失败:', e)
   }
@@ -181,30 +183,42 @@ const closeContextMenu = () => {
 }
 
 const setMapType = (type) => {
+  console.log('setMapType called, map:', map, 'mapLoaded:', mapLoaded, 'normalLayer:', normalLayer, 'satelliteLayer:', satelliteLayer)
+  
   mapType.value = type
   closeContextMenu()
   
-  if (!map || !mapLoaded) {
-    console.warn('地图未初始化')
+  if (!map) {
+    console.warn('地图未初始化: map is null')
     return
   }
   
-  if (type === 'satellite') {
-    if (satelliteLayer) {
-      if (roadNetLayer) {
-        map.remove(roadNetLayer)
-        roadNetLayer = null
+  try {
+    if (type === 'satellite') {
+      if (satelliteLayer) {
+        if (roadNetLayer) {
+          map.remove(roadNetLayer)
+          roadNetLayer = null
+        }
+        map.setLayers([satelliteLayer])
+        console.log('切换到卫星地图成功')
+      } else {
+        console.warn('satelliteLayer 未初始化')
       }
-      map.setLayers([satelliteLayer])
-    }
-  } else {
-    if (normalLayer) {
-      map.setLayers([normalLayer])
-      if (showRoadNet.value && !roadNetLayer) {
-        roadNetLayer = new window.AMap.RoadNet()
-        map.add(roadNetLayer)
+    } else {
+      if (normalLayer) {
+        map.setLayers([normalLayer])
+        if (showRoadNet.value && !roadNetLayer) {
+          roadNetLayer = new window.AMap.RoadNet()
+          map.add(roadNetLayer)
+        }
+        console.log('切换到标准地图成功')
+      } else {
+        console.warn('normalLayer 未初始化')
       }
     }
+  } catch (e) {
+    console.error('切换地图类型失败:', e)
   }
 }
 
