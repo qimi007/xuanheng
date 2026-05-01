@@ -70,6 +70,9 @@ let map = null
 let markers = []
 let mapLoaded = false
 let trafficLayer = null
+let satelliteLayer = null
+let roadNetLayer = null
+let defaultLayer = null
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -111,11 +114,16 @@ const initMap = async () => {
     const placeholder = mapContainer.value.querySelector('.map-placeholder')
     if (placeholder) placeholder.remove()
 
+    defaultLayer = new window.AMap.TileLayer()
+    satelliteLayer = new window.AMap.TileLayer.Satellite()
+    roadNetLayer = new window.AMap.TileLayer.RoadNet()
+    
     map = new window.AMap.Map(mapContainer.value, {
       zoom: 10,
       center: [116.397428, 39.90923],
       viewMode: '2D',
-      showIndoorMap: false
+      showIndoorMap: false,
+      layers: [defaultLayer]
     })
 
     map.addControl(new window.AMap.Scale())
@@ -189,11 +197,28 @@ const setMapType = (type) => {
   }
   
   try {
-    // 使用 setStatus 切换地图类型
-    // satellite: 卫星图, normal: 标准图
-    map.setStatus({
-      mapStyle: type === 'satellite' ? 'amap://satel' : 'amap://normal'
-    })
+    if (!defaultLayer) {
+      defaultLayer = new window.AMap.TileLayer()
+    }
+    if (!satelliteLayer) {
+      satelliteLayer = new window.AMap.TileLayer.Satellite()
+    }
+    
+    if (type === 'satellite') {
+      // 切换到卫星图（保留路网）
+      if (roadNetLayer) {
+        map.setLayers([satelliteLayer, roadNetLayer])
+      } else {
+        map.setLayers([satelliteLayer])
+      }
+    } else {
+      // 切换到标准图
+      if (roadNetLayer) {
+        map.setLayers([defaultLayer, roadNetLayer])
+      } else {
+        map.setLayers([defaultLayer])
+      }
+    }
     console.log('切换到' + (type === 'satellite' ? '卫星' : '标准') + '地图成功')
   } catch (e) {
     console.error('切换地图类型失败:', e)
@@ -203,6 +228,31 @@ const setMapType = (type) => {
 const toggleRoadNet = (show) => {
   showRoadNet.value = show
   closeContextMenu()
+  
+  if (!map || !mapLoaded) return
+  
+  try {
+    if (!defaultLayer) {
+      defaultLayer = new window.AMap.TileLayer()
+    }
+    if (!satelliteLayer) {
+      satelliteLayer = new window.AMap.TileLayer.Satellite()
+    }
+    if (!roadNetLayer) {
+      roadNetLayer = new window.AMap.TileLayer.RoadNet()
+    }
+    
+    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
+    
+    if (show) {
+      map.setLayers([baseLayer, roadNetLayer])
+    } else {
+      map.setLayers([baseLayer])
+    }
+    console.log(show ? '显示路网' : '隐藏路网')
+  } catch (e) {
+    console.error('切换路网失败:', e)
+  }
 }
 
 const toggleTraffic = (show) => {
