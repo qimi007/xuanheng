@@ -91,34 +91,46 @@ const initMap = async () => {
   }
 }
 
+let trafficLayer = null
+
 const initContextMenu = () => {
   const contextMenu = new window.AMap.ContextMenu()
 
   contextMenu.addItem('标准地图', () => {
     map.setMapType('normal')
+    contextMenu.close()
   }, 0)
 
   contextMenu.addItem('卫星地图', () => {
     map.setMapType('satellite')
+    contextMenu.close()
   }, 1)
 
   contextMenu.addItem('显示路网', () => {
     map.add(new window.AMap.RoadNet())
+    contextMenu.close()
   }, 2)
 
   contextMenu.addItem('隐藏路网', () => {
     map.remove(new window.AMap.RoadNet())
+    contextMenu.close()
   }, 3)
 
   contextMenu.addItem('显示路况', () => {
-    const trafficLayer = new window.AMap.TrafficLayer({ zIndex: 10 })
+    if (trafficLayer) {
+      map.remove(trafficLayer)
+    }
+    trafficLayer = new window.AMap.TrafficLayer({ zIndex: 100 })
     map.add(trafficLayer)
-    map.setLayers([trafficLayer])
+    contextMenu.close()
   }, 4)
 
   contextMenu.addItem('隐藏路况', () => {
-    const normalLayer = new window.AMap.NormalLayer()
-    map.setLayers([normalLayer])
+    if (trafficLayer) {
+      map.remove(trafficLayer)
+      trafficLayer = null
+    }
+    contextMenu.close()
   }, 5)
 
   map.on('rightclick', (e) => {
@@ -184,5 +196,32 @@ defineExpose({ updateMarkers })
   justify-content: center;
   background: #f5f5f5;
   color: #999;
+}
+</style>
+
+<style>
+.amap-context-menu {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  padding: 4px !important;
+  border: none !important;
+}
+
+.amap-context-menu-item {
+  color: #fff !important;
+  font-size: 13px !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s !important;
+}
+
+.amap-context-menu-item:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.amap-context-menu-item-separator {
+  background: rgba(255, 255, 255, 0.2) !important;
+  margin: 4px 8px !important;
 }
 </style>
