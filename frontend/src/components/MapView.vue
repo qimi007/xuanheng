@@ -69,7 +69,6 @@ const showTraffic = ref(false)
 let map = null
 let markers = []
 let mapLoaded = false
-let roadNetLayer = null
 let trafficLayer = null
 
 const loadMapScript = (key) => {
@@ -137,8 +136,6 @@ const initMap = async () => {
 
     map.on('complete', () => {
       console.log('地图加载完成')
-      roadNetLayer = new window.AMap.RoadNet()
-      map.add(roadNetLayer)
       
       mapLoaded = true
       updateMarkers()
@@ -192,37 +189,14 @@ const setMapType = (type) => {
   }
   
   try {
-    if (type === 'satellite') {
-      if (roadNetLayer) {
-        map.remove(roadNetLayer)
-        roadNetLayer = null
-      }
-      map.setMapType('satellite')
-      console.log('切换到卫星地图成功')
-    } else {
-      map.setMapType('normal')
-      if (!roadNetLayer && showRoadNet.value) {
-        roadNetLayer = new window.AMap.RoadNet()
-        map.add(roadNetLayer)
-      }
-      console.log('切换到标准地图成功')
-    }
+    map.setMapType(type)
+    console.log('切换到' + (type === 'satellite' ? '卫星' : '标准') + '地图成功')
   } catch (e) {
     console.error('切换地图类型失败:', e)
   }
 }
 
 const toggleRoadNet = (show) => {
-  if (show) {
-    if (!roadNetLayer) {
-      roadNetLayer = new window.AMap.RoadNet()
-    }
-    map.add(roadNetLayer)
-  } else {
-    if (roadNetLayer) {
-      map.remove(roadNetLayer)
-    }
-  }
   showRoadNet.value = show
   closeContextMenu()
 }
