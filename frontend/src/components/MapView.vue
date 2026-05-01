@@ -251,7 +251,7 @@ const updateLayers = () => {
       roadNetLayer = new window.AMap.TileLayer.RoadNet()
     }
     if (!trafficLayer) {
-      trafficLayer = new window.AMap.TrafficLayer({ zIndex: 100 })
+      trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 100 })
     }
     
     const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
