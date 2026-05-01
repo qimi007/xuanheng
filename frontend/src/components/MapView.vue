@@ -5,25 +5,45 @@
     <!-- 自定义右键菜单 -->
     <div 
       v-if="showContextMenu" 
+      ref="contextMenuRef"
       class="context-menu"
       :style="{ left: menuPosition.x + 'px', top: menuPosition.y + 'px' }"
+      @click.stop
     >
       <div class="menu-section">
         <div class="menu-title">地图类型</div>
-        <div class="menu-item" @click="setMapType('normal')">标准地图</div>
-        <div class="menu-item" @click="setMapType('satellite')">卫星地图</div>
+        <div class="menu-item" @click="setMapType('normal')">
+          <span class="check-icon">{{ mapType === 'normal' ? '✓' : '' }}</span>
+          标准地图
+        </div>
+        <div class="menu-item" @click="setMapType('satellite')">
+          <span class="check-icon">{{ mapType === 'satellite' ? '✓' : '' }}</span>
+          卫星地图
+        </div>
       </div>
       <div class="menu-divider"></div>
       <div class="menu-section">
         <div class="menu-title">路网</div>
-        <div class="menu-item" @click="toggleRoadNet(true)">显示路网</div>
-        <div class="menu-item" @click="toggleRoadNet(false)">隐藏路网</div>
+        <div class="menu-item" @click="toggleRoadNet(true)">
+          <span class="check-icon">{{ showRoadNet ? '✓' : '' }}</span>
+          显示路网
+        </div>
+        <div class="menu-item" @click="toggleRoadNet(false)">
+          <span class="check-icon">{{ !showRoadNet ? '✓' : '' }}</span>
+          隐藏路网
+        </div>
       </div>
       <div class="menu-divider"></div>
       <div class="menu-section">
         <div class="menu-title">路况</div>
-        <div class="menu-item" @click="toggleTraffic(true)">显示路况</div>
-        <div class="menu-item" @click="toggleTraffic(false)">隐藏路况</div>
+        <div class="menu-item" @click="toggleTraffic(true)">
+          <span class="check-icon">{{ showTraffic ? '✓' : '' }}</span>
+          显示路况
+        </div>
+        <div class="menu-item" @click="toggleTraffic(false)">
+          <span class="check-icon">{{ !showTraffic ? '✓' : '' }}</span>
+          隐藏路况
+        </div>
       </div>
     </div>
   </div>
@@ -31,16 +51,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { useSettingsStore } from '../stores/settings'
 import { useLocationStore } from '../stores/locations'
 
 const mapContainer = ref(null)
+const contextMenuRef = ref(null)
 const settingsStore = useSettingsStore()
 const locationStore = useLocationStore()
 
 const showContextMenu = ref(false)
 const menuPosition = ref({ x: 0, y: 0 })
+const mapType = ref('normal')
+const showRoadNet = ref(true)
+const showTraffic = ref(false)
 
 let map = null
 let markers = []
@@ -111,6 +135,9 @@ const initMap = async () => {
       showCompass: true
     }))
 
+    roadNetLayer = new window.AMap.RoadNet()
+    map.add(roadNetLayer)
+
     mapLoaded = true
     updateMarkers()
   } catch (e) {
@@ -120,11 +147,29 @@ const initMap = async () => {
 
 const handleContextMenu = (event) => {
   const rect = mapContainer.value.getBoundingClientRect()
-  menuPosition.value = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top
-  }
-  showContextMenu.value = true
+  let x = event.clientX - rect.left
+  let y = event.clientY - rect.top
+  
+  nextTick(() => {
+    if (contextMenuRef.value) {
+      const menuWidth = 160
+      const menuHeight = 240
+      const containerWidth = mapContainer.value.offsetWidth
+      const containerHeight = mapContainer.value.offsetHeight
+      
+      if (x + menuWidth > containerWidth) {
+        x = containerWidth - menuWidth - 10
+      }
+      if (y + menuHeight > containerHeight) {
+        y = containerHeight - menuHeight - 10
+      }
+      if (x < 0) x = 10
+      if (y < 0) y = 10
+    }
+    
+    menuPosition.value = { x, y }
+    showContextMenu.value = true
+  })
 }
 
 const closeContextMenu = () => {
@@ -133,6 +178,7 @@ const closeContextMenu = () => {
 
 const setMapType = (type) => {
   map.setMapType(type)
+  mapType.value = type
   closeContextMenu()
 }
 
@@ -147,6 +193,7 @@ const toggleRoadNet = (show) => {
       map.remove(roadNetLayer)
     }
   }
+  showRoadNet.value = show
   closeContextMenu()
 }
 
@@ -162,6 +209,7 @@ const toggleTraffic = (show) => {
       trafficLayer = null
     }
   }
+  showTraffic.value = show
   closeContextMenu()
 }
 
@@ -191,9 +239,11 @@ const updateMarkers = () => {
   }
 }
 
-const handleClickOutside = (event) => {
-  if (showContextMenu.value && mapContainer.value && !mapContainer.value.contains(event.target)) {
-    closeContextMenu()
+const handleDocumentClick = (event) => {
+  if (showContextMenu.value && contextMenuRef.value) {
+    if (!contextMenuRef.value.contains(event.target)) {
+      closeContextMenu()
+    }
   }
 }
 
@@ -201,11 +251,11 @@ onMounted(() => {
   if (settingsStore.mapKey) {
     initMap()
   }
-  document.addEventListener('click', handleClickOutside)
+  document.addEventListener('click', handleDocumentClick)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', handleDocumentClick)
 })
 
 watch(() => settingsStore.mapKey, (newKey) => {
@@ -243,7 +293,7 @@ defineExpose({ updateMarkers })
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   padding: 8px 0;
-  min-width: 140px;
+  min-width: 160px;
   z-index: 1000;
 }
 
@@ -264,11 +314,19 @@ defineExpose({ updateMarkers })
   padding: 10px 14px;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
 }
 
 .menu-item:hover {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
+}
+
+.check-icon {
+  width: 18px;
+  display: inline-block;
+  font-weight: bold;
 }
 
 .menu-divider {
