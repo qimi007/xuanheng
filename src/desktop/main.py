@@ -29,5 +29,5 @@ if __name__ == '__main__':
     
     time.sleep(2)
     
-    webview.create_window('地图工具', 'http://localhost:5000', debug=True)
-    webview.start()
+    window = webview.create_window('地图工具', 'http://localhost:5000')
+    webview.start(debug=True)
