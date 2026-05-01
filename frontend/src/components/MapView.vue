@@ -189,7 +189,11 @@ const setMapType = (type) => {
   }
   
   try {
-    map.setMapType(type)
+    // 使用 setStatus 切换地图类型
+    // satellite: 卫星图, normal: 标准图
+    map.setStatus({
+      mapStyle: type === 'satellite' ? 'amap://satel' : 'amap://normal'
+    })
     console.log('切换到' + (type === 'satellite' ? '卫星' : '标准') + '地图成功')
   } catch (e) {
     console.error('切换地图类型失败:', e)
