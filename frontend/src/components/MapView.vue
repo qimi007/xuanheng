@@ -141,15 +141,9 @@ const initMap = async () => {
     satelliteLayer = new window.AMap.SatelliteLayer()
     roadNetLayer = new window.AMap.RoadNet()
     
-    setTimeout(() => {
-      try {
-        map.setLayers([normalLayer, roadNetLayer])
-      } catch (e) {
-        console.warn('设置图层失败:', e)
-      }
-      mapLoaded = true
-      updateMarkers()
-    }, 100)
+    mapLoaded = true
+    map.setLayers([normalLayer, roadNetLayer])
+    updateMarkers()
   } catch (e) {
     console.error('加载地图失败:', e)
   }
@@ -190,17 +184,26 @@ const setMapType = (type) => {
   mapType.value = type
   closeContextMenu()
   
+  if (!map || !mapLoaded) {
+    console.warn('地图未初始化')
+    return
+  }
+  
   if (type === 'satellite') {
-    if (roadNetLayer) {
-      map.remove(roadNetLayer)
-      roadNetLayer = null
+    if (satelliteLayer) {
+      if (roadNetLayer) {
+        map.remove(roadNetLayer)
+        roadNetLayer = null
+      }
+      map.setLayers([satelliteLayer])
     }
-    map.setLayers([satelliteLayer])
   } else {
-    map.setLayers([normalLayer])
-    if (!roadNetLayer && showRoadNet.value) {
-      roadNetLayer = new window.AMap.RoadNet()
-      map.add(roadNetLayer)
+    if (normalLayer) {
+      map.setLayers([normalLayer])
+      if (showRoadNet.value && !roadNetLayer) {
+        roadNetLayer = new window.AMap.RoadNet()
+        map.add(roadNetLayer)
+      }
     }
   }
 }
