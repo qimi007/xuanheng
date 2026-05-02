@@ -295,9 +295,9 @@ const handleClear = () => {
 
 .point-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid #f8f8f8;
 }
 
@@ -308,7 +308,6 @@ const handleClear = () => {
 .point-checkbox {
   display: flex;
   align-items: center;
-  padding-top: 4px;
 }
 
 .point-checkbox input {
@@ -319,7 +318,8 @@ const handleClear = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
+  line-height: 1.3;
 }
 
 .point-name-row {
@@ -340,20 +340,20 @@ const handleClear = () => {
 .point-name-input {
   font-size: 12px;
   font-weight: 500;
-  padding: 2px 6px;
+  padding: 1px 4px;
   border: 1px solid #7986cb;
-  border-radius: 4px;
+  border-radius: 3px;
   outline: none;
-  width: 100px;
+  width: 80px;
 }
 
 .point-coord-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 1px 3px;
+  border-radius: 3px;
   transition: background 0.2s;
 }
 
@@ -362,19 +362,19 @@ const handleClear = () => {
 }
 
 .point-coordsys {
-  font-size: 11px;
+  font-size: 6px;
   color: #5c6bc0;
   font-weight: 500;
 }
 
 .point-coord {
-  font-size: 11px;
-  color: #666;
+  font-size: 6px;
+  color: #888;
   font-family: monospace;
 }
 
 .copy-hint {
-  font-size: 10px;
+  font-size: 5px;
   color: #5c6bc0;
   font-weight: 500;
 }
