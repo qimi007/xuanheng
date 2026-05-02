@@ -38,30 +38,37 @@
           </div>
 
           <div v-if="group.visible" class="points">
-            <div v-for="point in group.points" :key="point.id" class="point-row">
-              <label class="checkbox-label">
+            <div v-for="point in group.points" :key="point.id" class="point-item">
+              <div class="point-checkbox">
                 <input
                   type="checkbox"
                   :checked="locationStore.isPointVisible(point.id)"
                   @change="locationStore.togglePoint(point.id)"
                 />
-              </label>
-              <input
-                v-if="editingPointId === point.id"
-                v-model="editingPointName"
-                class="point-name-input"
-                @blur="savePointName(point.id)"
-                @keyup.enter="savePointName(point.id)"
-                @click.stop
-                ref="pointNameInput"
-              />
-              <span 
-                v-else 
-                class="point-name"
-                @dblclick.stop="startEditPoint(point)"
-              >{{ point.tagName }}</span>
-              <span class="point-coordsys">[{{ point.cooSys }}]</span>
-              <span class="point-coord">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
+              </div>
+              <div class="point-info">
+                <div class="point-name-row">
+                  <input
+                    v-if="editingPointId === point.id"
+                    v-model="editingPointName"
+                    class="point-name-input"
+                    @blur="savePointName(point.id)"
+                    @keyup.enter="savePointName(point.id)"
+                    @click.stop
+                    ref="pointNameInput"
+                  />
+                  <span 
+                    v-else 
+                    class="point-name"
+                    @dblclick.stop="startEditPoint(point)"
+                  >{{ point.tagName }}</span>
+                </div>
+                <div class="point-coord-row" @click="copyCoords(point)">
+                  <span class="point-coordsys">[{{ point.cooSys }}]</span>
+                  <span class="point-coord">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
+                  <span class="copy-hint" v-if="copiedPointId === point.id">已复制</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -85,6 +92,17 @@ const groupNameInput = ref(null)
 const editingPointId = ref(null)
 const editingPointName = ref('')
 const pointNameInput = ref(null)
+const copiedPointId = ref(null)
+
+const copyCoords = (point) => {
+  const text = `${point.lng.toFixed(6)}, ${point.lat.toFixed(6)}`
+  navigator.clipboard.writeText(text).then(() => {
+    copiedPointId.value = point.id
+    setTimeout(() => {
+      copiedPointId.value = null
+    }, 1500)
+  })
+}
 
 const startEditGroup = (group) => {
   editingGroupId.value = group.id
@@ -275,40 +293,72 @@ const handleClear = () => {
   border-top: 1px solid #f0f0f0;
 }
 
-.point-row {
+.point-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid #f8f8f8;
 }
 
-.point-row:last-child {
+.point-item:last-child {
   border-bottom: none;
 }
 
-.checkbox-label {
+.point-checkbox {
   display: flex;
   align-items: center;
+  padding-top: 4px;
+}
+
+.point-checkbox input {
   cursor: pointer;
 }
 
-.checkbox-label input {
-  cursor: pointer;
+.point-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.point-name-row {
+  display: flex;
+  align-items: center;
 }
 
 .point-name {
   font-size: 12px;
-  min-width: 60px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.point-name:hover {
+  color: #5c6bc0;
 }
 
 .point-name-input {
   font-size: 12px;
-  min-width: 60px;
+  font-weight: 500;
   padding: 2px 6px;
   border: 1px solid #7986cb;
   border-radius: 4px;
   outline: none;
+  width: 100px;
+}
+
+.point-coord-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.point-coord-row:hover {
+  background: #f5f5f5;
 }
 
 .point-coordsys {
@@ -318,8 +368,14 @@ const handleClear = () => {
 }
 
 .point-coord {
-  font-size: 10px;
-  color: #999;
+  font-size: 11px;
+  color: #666;
   font-family: monospace;
+}
+
+.copy-hint {
+  font-size: 10px;
+  color: #5c6bc0;
+  font-weight: 500;
 }
 </style>
