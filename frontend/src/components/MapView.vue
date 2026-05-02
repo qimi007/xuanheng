@@ -16,10 +16,6 @@
           <span class="check-icon">{{ mapType === 'normal' ? '✓' : '' }}</span>
           标准地图
         </div>
-        <div class="menu-item" @click="setMapType('normal2')">
-          <span class="check-icon">{{ mapType === 'normal2' ? '✓' : '' }}</span>
-          Normal样式
-        </div>
         <div class="menu-item" @click="setMapType('satellite')">
           <span class="check-icon">{{ mapType === 'satellite' ? '✓' : '' }}</span>
           卫星地图
@@ -118,7 +114,8 @@ const initMap = async () => {
       zoom: 10,
       center: [116.397428, 39.90923],
       viewMode: '2D',
-      showIndoorMap: false
+      showIndoorMap: false,
+      mapStyle: 'amap://styles/normal'
     })
 
     map.addControl(new window.AMap.Scale())
@@ -193,15 +190,8 @@ const setMapType = (type) => {
   }
   
   try {
-    // 对于 normal2 样式，先设置 mapStyle
-    if (type === 'normal2') {
-      map.setStatus({ mapStyle: 'amap://styles/normal' })
-    }
-    // 标准地图不设置特殊样式，使用默认
-    // 卫星地图通过图层切换处理
-    
     updateLayers()
-    console.log('切换到' + type + '地图成功')
+    console.log('切换到' + (type === 'satellite' ? '卫星' : '标准') + '地图成功')
   } catch (e) {
     console.error('切换地图类型失败:', e)
   }
