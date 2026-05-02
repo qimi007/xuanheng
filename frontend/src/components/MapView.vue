@@ -16,6 +16,10 @@
           <span class="check-icon">{{ mapType === 'normal' ? '✓' : '' }}</span>
           标准地图
         </div>
+        <div class="menu-item" @click="setMapType('normal2')">
+          <span class="check-icon">{{ mapType === 'normal2' ? '✓' : '' }}</span>
+          Normal样式
+        </div>
         <div class="menu-item" @click="setMapType('satellite')">
           <span class="check-icon">{{ mapType === 'satellite' ? '✓' : '' }}</span>
           卫星地图
@@ -24,25 +28,17 @@
       <div class="menu-divider"></div>
       <div class="menu-section">
         <div class="menu-title">路网</div>
-        <div class="menu-item" @click="toggleRoadNet(true)">
+        <div class="menu-item" @click="toggleRoadNet()">
           <span class="check-icon">{{ showRoadNet ? '✓' : '' }}</span>
-          显示路网
-        </div>
-        <div class="menu-item" @click="toggleRoadNet(false)">
-          <span class="check-icon">{{ !showRoadNet ? '✓' : '' }}</span>
-          隐藏路网
+          {{ showRoadNet ? '隐藏路网' : '显示路网' }}
         </div>
       </div>
       <div class="menu-divider"></div>
       <div class="menu-section">
         <div class="menu-title">路况</div>
-        <div class="menu-item" @click="toggleTraffic(true)">
+        <div class="menu-item" @click="toggleTraffic()">
           <span class="check-icon">{{ showTraffic ? '✓' : '' }}</span>
-          显示路况
-        </div>
-        <div class="menu-item" @click="toggleTraffic(false)">
-          <span class="check-icon">{{ !showTraffic ? '✓' : '' }}</span>
-          隐藏路况
+          {{ showTraffic ? '隐藏路况' : '显示路况' }}
         </div>
       </div>
     </div>
@@ -73,6 +69,7 @@ let trafficLayer = null
 let satelliteLayer = null
 let roadNetLayer = null
 let defaultLayer = null
+let normalLayer = null
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -204,14 +201,14 @@ const setMapType = (type) => {
   }
 }
 
-const toggleRoadNet = (show) => {
-  showRoadNet.value = show
+const toggleRoadNet = () => {
+  showRoadNet.value = !showRoadNet.value
   closeContextMenu()
   updateLayers()
 }
 
-const toggleTraffic = (show) => {
-  showTraffic.value = show
+const toggleTraffic = () => {
+  showTraffic.value = !showTraffic.value
   closeContextMenu()
   updateLayers()
 }
@@ -222,6 +219,11 @@ const updateLayers = () => {
   try {
     if (!defaultLayer) {
       defaultLayer = new window.AMap.TileLayer()
+    }
+    if (!normalLayer) {
+      normalLayer = new window.AMap.TileLayer({ 
+        mapStyle: 'amap://normal' 
+      })
     }
     if (!satelliteLayer) {
       satelliteLayer = new window.AMap.TileLayer.Satellite()
@@ -234,10 +236,17 @@ const updateLayers = () => {
     }
     
     // 移除所有图层
-    map.remove([defaultLayer, satelliteLayer, roadNetLayer, trafficLayer])
+    map.remove([defaultLayer, normalLayer, satelliteLayer, roadNetLayer, trafficLayer])
     
     // 添加底图
-    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
+    let baseLayer
+    if (mapType.value === 'satellite') {
+      baseLayer = satelliteLayer
+    } else if (mapType.value === 'normal2') {
+      baseLayer = normalLayer
+    } else {
+      baseLayer = defaultLayer
+    }
     map.add(baseLayer)
     
     // 添加路网
