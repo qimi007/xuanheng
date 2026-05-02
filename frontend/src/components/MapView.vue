@@ -254,24 +254,19 @@ const updateLayers = () => {
       trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 100 })
     }
     
-    // 先移除所有图层
-    map.remove([defaultLayer, satelliteLayer, roadNetLayer, trafficLayer])
+    // 使用 setLayers 设置所有图层
+    const layers = []
+    layers.push(mapType.value === 'satellite' ? satelliteLayer : defaultLayer)
     
-    // 切换底图
-    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
-    map.add(baseLayer)
-    
-    // 切换路网
     if (showRoadNet.value) {
-      map.add(roadNetLayer)
+      layers.push(roadNetLayer)
     }
-    
-    // 切换路况
     if (showTraffic.value) {
-      map.add(trafficLayer)
+      layers.push(trafficLayer)
     }
     
-    console.log('更新图层完成, mapType:', mapType.value, 'roadNet:', showRoadNet.value, 'traffic:', showTraffic.value)
+    map.setLayers(layers)
+    console.log('更新图层: mapType=' + mapType.value + ', roadNet=' + showRoadNet.value + ', traffic=' + showTraffic.value)
   } catch (e) {
     console.error('更新图层失败:', e)
   }
