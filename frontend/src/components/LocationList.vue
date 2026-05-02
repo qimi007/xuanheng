@@ -362,19 +362,19 @@ const handleClear = () => {
 }
 
 .point-coordsys {
-  font-size: 6px;
+  font-size: 8px;
   color: #5c6bc0;
   font-weight: 500;
 }
 
 .point-coord {
-  font-size: 6px;
+  font-size: 8px;
   color: #888;
   font-family: monospace;
 }
 
 .copy-hint {
-  font-size: 5px;
+  font-size: 7px;
   color: #5c6bc0;
   font-weight: 500;
 }
