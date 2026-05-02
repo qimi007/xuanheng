@@ -227,15 +227,14 @@ const updateLayers = () => {
       satelliteLayer = new window.AMap.TileLayer.Satellite()
     }
     if (!roadNetLayer) {
-      roadNetLayer = new window.AMap.TileLayer.RoadNet()
+      roadNetLayer = new window.AMap.TileLayer.RoadNet({ zIndex: 10 })
     }
     if (!trafficLayer) {
-      trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 100 })
+      trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 11 })
     }
     
-    // 使用 setLayers 设置所有图层
-    const layers = []
-    layers.push(mapType.value === 'satellite' ? satelliteLayer : defaultLayer)
+    // 使用 setLayers 设置底图和路网/路况
+    const layers = [mapType.value === 'satellite' ? satelliteLayer : defaultLayer]
     
     if (showRoadNet.value) {
       layers.push(roadNetLayer)
@@ -244,8 +243,8 @@ const updateLayers = () => {
       layers.push(trafficLayer)
     }
     
+    console.log('setLayers:', layers.map(l => l.CLASS_NAME))
     map.setLayers(layers)
-    console.log('更新图层: mapType=' + mapType.value + ', roadNet=' + showRoadNet.value + ', traffic=' + showTraffic.value)
   } catch (e) {
     console.error('更新图层失败:', e)
   }
