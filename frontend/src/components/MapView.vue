@@ -197,28 +197,7 @@ const setMapType = (type) => {
   }
   
   try {
-    if (!defaultLayer) {
-      defaultLayer = new window.AMap.TileLayer()
-    }
-    if (!satelliteLayer) {
-      satelliteLayer = new window.AMap.TileLayer.Satellite()
-    }
-    
-    if (type === 'satellite') {
-      // 切换到卫星图（保留路网）
-      if (roadNetLayer) {
-        map.setLayers([satelliteLayer, roadNetLayer])
-      } else {
-        map.setLayers([satelliteLayer])
-      }
-    } else {
-      // 切换到标准图
-      if (roadNetLayer) {
-        map.setLayers([defaultLayer, roadNetLayer])
-      } else {
-        map.setLayers([defaultLayer])
-      }
-    }
+    updateLayers()
     console.log('切换到' + (type === 'satellite' ? '卫星' : '标准') + '地图成功')
   } catch (e) {
     console.error('切换地图类型失败:', e)
