@@ -9,6 +9,7 @@ import urllib.request
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FRONTEND_DIR = os.path.join(PROJECT_DIR, 'frontend')
 DIST_DIR = os.path.join(FRONTEND_DIR, 'dist')
+VERSION = 'v1.0.0'
 
 def build_frontend():
     if not os.path.exists(DIST_DIR):
@@ -29,17 +30,19 @@ def get_window_title():
         import json
         status = json.loads(data)
         
+        base_title = f'玄衡 {VERSION}'
+        
         if not status.get('isActivated'):
             days = status.get('remainingDays', 31)
             if status.get('isExpired'):
-                return '地图工具(未激活，已过期，请填写API Key)'
+                return f'{base_title}(未激活，已过期，请填写API Key)'
             else:
-                return f'地图工具(未激活，体验剩余{days}天)'
+                return f'{base_title}(未激活，体验剩余{days}天)'
         else:
-            return '地图工具'
+            return base_title
     except Exception as e:
         print(f"获取状态失败: {e}")
-        return '地图工具'
+        return f'玄衡 {VERSION}'
 
 if __name__ == '__main__':
     build_frontend()
