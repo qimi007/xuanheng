@@ -69,7 +69,6 @@ let trafficLayer = null
 let satelliteLayer = null
 let roadNetLayer = null
 let defaultLayer = null
-let normalLayer = null
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -194,8 +193,16 @@ const setMapType = (type) => {
   }
   
   try {
+    // 对于 normal2 样式，先设置 mapStyle
+    if (type === 'normal2') {
+      map.setStatus({ mapStyle: 'amap://styles/normal' })
+    } else if (type === 'normal') {
+      map.setStatus({ mapStyle: 'amap://styles/light' })
+    }
+    // 卫星地图通过图层切换处理
+    
     updateLayers()
-    console.log('切换到' + (type === 'satellite' ? '卫星' : '标准') + '地图成功')
+    console.log('切换到' + type + '地图成功')
   } catch (e) {
     console.error('切换地图类型失败:', e)
   }
@@ -220,11 +227,6 @@ const updateLayers = () => {
     if (!defaultLayer) {
       defaultLayer = new window.AMap.TileLayer()
     }
-    if (!normalLayer) {
-      normalLayer = new window.AMap.TileLayer({ 
-        mapStyle: 'amap://normal' 
-      })
-    }
     if (!satelliteLayer) {
       satelliteLayer = new window.AMap.TileLayer.Satellite()
     }
@@ -236,17 +238,10 @@ const updateLayers = () => {
     }
     
     // 移除所有图层
-    map.remove([defaultLayer, normalLayer, satelliteLayer, roadNetLayer, trafficLayer])
+    map.remove([defaultLayer, satelliteLayer, roadNetLayer, trafficLayer])
     
-    // 添加底图
-    let baseLayer
-    if (mapType.value === 'satellite') {
-      baseLayer = satelliteLayer
-    } else if (mapType.value === 'normal2') {
-      baseLayer = normalLayer
-    } else {
-      baseLayer = defaultLayer
-    }
+    // 添加底图（normal/normal2 用 defaultLayer，satellite 用卫星图层）
+    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
     map.add(baseLayer)
     
     // 添加路网
