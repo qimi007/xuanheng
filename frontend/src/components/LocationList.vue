@@ -63,9 +63,9 @@
                     @dblclick.stop="startEditPoint(point)"
                   >{{ point.tagName }}</span>
                 </div>
-                <div class="point-coord-row" @click="copyCoords(point)">
+                <div class="point-coord-row">
                   <span class="point-coordsys">[{{ point.cooSys }}]</span>
-                  <span class="point-coord">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
+                  <span class="point-coord" @click="copyCoords(point)">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
                   <span class="point-time">{{ formatTime(point.time) }}</span>
                   <span class="copy-hint" v-if="copiedPointId === point.id">已复制</span>
                 </div>
@@ -361,14 +361,8 @@ const handleClear = () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  cursor: pointer;
   padding: 1px 3px;
   border-radius: 3px;
-  transition: background 0.2s;
-}
-
-.point-coord-row:hover {
-  background: #f5f5f5;
 }
 
 .point-coordsys {
@@ -382,6 +376,11 @@ const handleClear = () => {
   color: #333;
   font-family: monospace;
   font-weight: 600;
+  cursor: pointer;
+}
+
+.point-coord:hover {
+  color: #5c6bc0;
 }
 
 .point-time {
