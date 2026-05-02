@@ -25,7 +25,7 @@
       <div class="menu-section">
         <div class="menu-title">路网</div>
         <div class="menu-item" @click="toggleRoadNet()">
-          <span class="check-icon">{{ showRoadNet ? '✓' : '' }}</span>
+          <span class="check-icon">{{ '' }}</span>
           {{ showRoadNet ? '隐藏路网' : '显示路网' }}
         </div>
       </div>
@@ -33,7 +33,7 @@
       <div class="menu-section">
         <div class="menu-title">路况</div>
         <div class="menu-item" @click="toggleTraffic()">
-          <span class="check-icon">{{ showTraffic ? '✓' : '' }}</span>
+          <span class="check-icon">{{ '' }}</span>
           {{ showTraffic ? '隐藏路况' : '显示路况' }}
         </div>
       </div>
@@ -55,7 +55,7 @@ const locationStore = useLocationStore()
 const showContextMenu = ref(false)
 const menuPosition = ref({ x: 0, y: 0 })
 const mapType = ref('normal')
-const showRoadNet = ref(true)
+const showRoadNet = ref(false)
 const showTraffic = ref(false)
 
 let map = null
@@ -106,7 +106,7 @@ const initMap = async () => {
     const placeholder = mapContainer.value.querySelector('.map-placeholder')
     if (placeholder) placeholder.remove()
 
-    defaultLayer = new window.AMap.TileLayer()
+    defaultLayer = new window.AMap.createDefaultLayer()
     satelliteLayer = new window.AMap.TileLayer.Satellite()
     roadNetLayer = new window.AMap.TileLayer.RoadNet()
     
@@ -114,7 +114,8 @@ const initMap = async () => {
       zoom: 10,
       center: [116.397428, 39.90923],
       viewMode: '2D',
-      showIndoorMap: false
+      showIndoorMap: false,
+      mapStyle: 'amap://styles/normal'
     })
 
     map.addControl(new window.AMap.Scale())
@@ -135,10 +136,7 @@ const initMap = async () => {
 
     map.on('complete', () => {
       console.log('地图加载完成')
-      
-      map.setMapStyle('amap://styles/normal')
       mapLoaded = true
-      updateLayers()
       updateMarkers()
       console.log('地图初始化完成, mapLoaded:', mapLoaded)
     })
@@ -200,47 +198,42 @@ const setMapType = (type) => {
 const toggleRoadNet = () => {
   showRoadNet.value = !showRoadNet.value
   closeContextMenu()
-  updateLayers()
+  if (!roadNetLayer) {
+    roadNetLayer = new window.AMap.TileLayer.RoadNet({ zIndex: 10 })
+  }
+  // 添加路网
+  if (showRoadNet.value) {
+    map.addLayer(roadNetLayer)
+  } else {
+    map.removeLayer(roadNetLayer)
+  }
 }
 
 const toggleTraffic = () => {
   showTraffic.value = !showTraffic.value
   closeContextMenu()
-  updateLayers()
+  if (!trafficLayer) {
+    trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 11 })
+  }
+  // 添加路况
+  if (showTraffic.value) {
+    
+    map.addLayer(trafficLayer)
+  } else {
+    map.removeLayer(trafficLayer)
+  }
 }
 
 const updateLayers = () => {
   if (!map || !mapLoaded) return
-  
   try {
-    if (!defaultLayer) {
-      defaultLayer = new window.AMap.TileLayer()
-    }
     if (!satelliteLayer) {
       satelliteLayer = new window.AMap.TileLayer.Satellite()
     }
-    if (!roadNetLayer) {
-      roadNetLayer = new window.AMap.TileLayer.RoadNet({ zIndex: 10 })
-    }
-    if (!trafficLayer) {
-      trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 11 })
-    }
-    
-    // 移除所有图层
-    map.remove([defaultLayer, satelliteLayer, roadNetLayer, trafficLayer])
-    
-    // 添加底图（normal/normal2 用 defaultLayer，satellite 用卫星图层）
-    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
-    map.add(baseLayer)
-    
-    // 添加路网
-    if (showRoadNet.value) {
-      map.add(roadNetLayer)
-    }
-    
-    // 添加路况
-    if (showTraffic.value) {
-      map.add(trafficLayer)
+    if (mapType.value === 'satellite') {
+        map.addLayer(satelliteLayer)
+    } else {
+        map.removeLayer(satelliteLayer)
     }
   } catch (e) {
     console.error('更新图层失败:', e)
