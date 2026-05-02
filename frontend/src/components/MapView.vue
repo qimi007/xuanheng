@@ -114,8 +114,7 @@ const initMap = async () => {
       zoom: 10,
       center: [116.397428, 39.90923],
       viewMode: '2D',
-      showIndoorMap: false,
-      mapStyle: 'amap://styles/normal'
+      showIndoorMap: false
     })
 
     map.addControl(new window.AMap.Scale())
