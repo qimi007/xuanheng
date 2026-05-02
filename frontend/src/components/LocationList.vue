@@ -65,7 +65,7 @@
                 </div>
                 <div class="point-coord-row">
                   <span class="point-coordsys">[{{ point.cooSys }}]</span>
-                  <span class="point-coord" @click="copyCoords(point)">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
+                  <span class="point-coord" @click="copyCoords(point)">{{ point.lng.toFixed(6) }},{{ point.lat.toFixed(6) }}</span>
                   <span class="point-time">{{ formatTime(point.time) }}</span>
                   <span class="copy-hint" v-if="copiedPointId === point.id">已复制</span>
                 </div>
@@ -96,7 +96,7 @@ const pointNameInput = ref(null)
 const copiedPointId = ref(null)
 
 const copyCoords = (point) => {
-  const text = `${point.lng.toFixed(6)}, ${point.lat.toFixed(6)}`
+  const text = `${point.lng.toFixed(6)},${point.lat.toFixed(6)}`
   navigator.clipboard.writeText(text).then(() => {
     copiedPointId.value = point.id
     setTimeout(() => {
