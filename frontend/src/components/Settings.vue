@@ -6,12 +6,19 @@
     </div>
 
     <div class="dialog-content">
+      <div v-if="settingsStore.isExpired() && !settingsStore.mapKey" class="expired-warning">
+        {{ settingsStore.hasUsedBefore() ? '配置文件已被删除且已过期，请填写 API Key' : '已超过31天使用期限，请填写 API Key' }}
+      </div>
+      <div v-else-if="remainingDays <= 10 && remainingDays > 0" class="expire-notice">
+        还可使用 {{ remainingDays }} 天，建议填写自己的 API Key
+      </div>
+
       <div class="form-item">
         <label class="form-label">地图服务商</label>
         <select v-model="provider" class="form-select" @change="key = ''">
           <option value="amap">高德地图</option>
-          <option value="bmap">百度地图</option>
-          <option value="google">Google Maps</option>
+          <option value="bmap" disabled>百度地图（暂不支持）</option>
+          <option value="google" disabled>Google Maps（暂不支持）</option>
         </select>
       </div>
 
@@ -30,15 +37,21 @@
         </div>
       </div>
 
-      <button class="btn-save" @click="handleSave">保存设置</button>
+      <button 
+        class="btn-save" 
+        @click="handleSave"
+        :disabled="settingsStore.isExpired() && !key"
+      >
+        {{ settingsStore.isExpired() && !key ? '请填写 API Key' : '保存设置' }}
+      </button>
 
-      <p class="tips">API Key 将安全存储在本地浏览器中</p>
+      <p class="tips">API Key 将存储到本地文件 D:/Magic/settings.json</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSettingsStore } from '../stores/settings'
 
 defineEmits(['close'])
@@ -48,6 +61,8 @@ const settingsStore = useSettingsStore()
 const provider = ref('amap')
 const key = ref('')
 const showKey = ref(false)
+
+const remainingDays = computed(() => settingsStore.getRemainingDays())
 
 onMounted(() => {
   provider.value = settingsStore.mapProvider
@@ -173,5 +188,30 @@ const handleSave = () => {
   font-size: 11px;
   color: #999;
   text-align: center;
+}
+
+.expired-warning {
+  padding: 12px;
+  background: #fee;
+  border: 1px solid #f88;
+  border-radius: 8px;
+  color: #c00;
+  font-size: 13px;
+  text-align: center;
+}
+
+.expire-notice {
+  padding: 12px;
+  background: #fff8e0;
+  border: 1px solid #fc0;
+  border-radius: 8px;
+  color: #960;
+  font-size: 13px;
+  text-align: center;
+}
+
+.btn-save:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 </style>

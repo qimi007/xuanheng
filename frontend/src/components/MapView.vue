@@ -1,5 +1,5 @@
 <template>
-  <div ref="mapContainer" class="map-container" v-if="settingsStore.mapKey" @contextmenu.prevent="handleContextMenu">
+  <div ref="mapContainer" class="map-container" v-if="settingsStore.getActiveKey()" @contextmenu.prevent="handleContextMenu">
     <div class="map-placeholder">正在加载地图...</div>
     
     <!-- 自定义右键菜单 -->
@@ -81,10 +81,10 @@ const loadMapScript = (key) => {
 }
 
 const initMap = async () => {
-  if (!settingsStore.mapKey || mapLoaded) return
+  if (!settingsStore.getActiveKey() || mapLoaded) return
 
   try {
-    await loadMapScript(settingsStore.mapKey)
+    await loadMapScript(settingsStore.getActiveKey())
 
     await new Promise((resolve) => {
       window.AMap.plugin([
@@ -275,7 +275,7 @@ const handleDocumentClick = (event) => {
 }
 
 onMounted(() => {
-  if (settingsStore.mapKey) {
+  if (settingsStore.getActiveKey()) {
     initMap()
   }
   document.addEventListener('click', handleDocumentClick)

@@ -38,15 +38,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import MapView from './components/MapView.vue'
 import AddLocation from './components/AddLocation.vue'
 import LocationList from './components/LocationList.vue'
 import Settings from './components/Settings.vue'
+import { useSettingsStore } from './stores/settings'
 
 const activeFeature = ref(null)
 const showDialog = ref(false)
 const showListCard = ref(false)
+const settingsStore = useSettingsStore()
 
 const toggleFeature = (feature) => {
   if (feature === 'list') {
@@ -67,6 +69,24 @@ const closeDialog = () => {
   showDialog.value = false
   activeFeature.value = null
 }
+
+onMounted(() => {
+  const checkAndOpenSettings = () => {
+    if (settingsStore.isLoaded && settingsStore.needsKey()) {
+      toggleFeature('settings')
+    }
+  }
+  if (settingsStore.isLoaded) {
+    checkAndOpenSettings()
+  } else {
+    const interval = setInterval(() => {
+      if (settingsStore.isLoaded) {
+        clearInterval(interval)
+        checkAndOpenSettings()
+      }
+    }, 100)
+  }
+})
 </script>
 
 <style>

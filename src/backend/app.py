@@ -1,16 +1,40 @@
 import os
-from flask import Flask, jsonify, send_from_directory
+import json
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from waitress import serve
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DIST_DIR = os.path.join(PROJECT_DIR, 'frontend', 'dist')
 
+CONFIG_DIR = 'D:/Magic'
+CONFIG_FILE = os.path.join(CONFIG_DIR, 'settings.json')
+
 app = Flask(__name__, static_folder=DIST_DIR, static_url_path='')
 CORS(app)
 
+def ensure_config_dir():
+    if not os.path.exists(CONFIG_DIR):
+        os.makedirs(CONFIG_DIR)
+
 @app.route('/api/health')
 def health():
+    return jsonify({"status": "ok"})
+
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    ensure_config_dir()
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return jsonify(json.load(f))
+    return jsonify({})
+
+@app.route('/api/settings', methods=['POST'])
+def save_settings():
+    ensure_config_dir()
+    data = request.get_json()
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
     return jsonify({"status": "ok"})
 
 @app.route('/')
