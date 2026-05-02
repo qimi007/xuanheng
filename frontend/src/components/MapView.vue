@@ -196,9 +196,8 @@ const setMapType = (type) => {
     // 对于 normal2 样式，先设置 mapStyle
     if (type === 'normal2') {
       map.setStatus({ mapStyle: 'amap://styles/normal' })
-    } else if (type === 'normal') {
-      map.setStatus({ mapStyle: 'amap://styles/light' })
     }
+    // 标准地图不设置特殊样式，使用默认
     // 卫星地图通过图层切换处理
     
     updateLayers()
