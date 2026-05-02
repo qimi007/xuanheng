@@ -16,6 +16,7 @@ export const useLocationStore = defineStore('locations', () => {
       lng: coord.lng,
       lat: coord.lat,
       alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
+      time: extras[index]?.time || Date.now(),
       extra: extras[index]?.extra || {}
     }))
     

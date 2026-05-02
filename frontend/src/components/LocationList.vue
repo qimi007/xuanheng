@@ -66,6 +66,7 @@
                 <div class="point-coord-row" @click="copyCoords(point)">
                   <span class="point-coordsys">[{{ point.cooSys }}]</span>
                   <span class="point-coord">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
+                  <span class="point-time">{{ formatTime(point.time) }}</span>
                   <span class="copy-hint" v-if="copiedPointId === point.id">已复制</span>
                 </div>
               </div>
@@ -102,6 +103,15 @@ const copyCoords = (point) => {
       copiedPointId.value = null
     }, 1500)
   })
+}
+
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp)
+  const day = date.getDate()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${day}-${hours}:${minutes}:${seconds}`
 }
 
 const startEditGroup = (group) => {
@@ -369,8 +379,16 @@ const handleClear = () => {
 
 .point-coord {
   font-size: 8px;
-  color: #888;
+  color: #333;
   font-family: monospace;
+  font-weight: 600;
+}
+
+.point-time {
+  font-size: 8px;
+  color: #333;
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .copy-hint {
