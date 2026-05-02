@@ -4,7 +4,6 @@ import time
 import sys
 import os
 import subprocess
-import requests
 import urllib.request
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,7 +36,7 @@ def get_window_title():
             else:
                 return f'地图工具(未激活，体验剩余{days}天)'
         else:
-            return '地图工具(已激活)'
+            return '地图工具'
     except Exception as e:
         print(f"获取状态失败: {e}")
         return '地图工具'
