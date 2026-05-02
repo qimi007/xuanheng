@@ -109,12 +109,51 @@ python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗
 - **对话框**：圆角卡片 + 渐变阴影
 - **按钮**：蓝紫色渐变 + 悬停效果
 
+## 高德地图 JS API 2.0 注意事项
+
+### 地图初始化
+- 加载脚本：`https://webapi.amap.com/maps?v=2.0&key=${key}`
+- 创建地图：`new AMap.Map(container, options)`
+- 地图样式：使用 `map.setMapStyle('amap://styles/normal')` 在 `complete` 事件中设置，不在构造函数中设置 `mapStyle`
+
+### 图层系统
+JS API 2.0 中使用 TileLayer 子类管理图层，**不使用**以下写法：
+- `AMap.NormalLayer`、`AMap.SatelliteLayer`、`AMap.RoadNet` — 这些不是构造函数
+- `AMap.TrafficLayer` — 不存在
+
+**正确写法**（均在 `AMap.TileLayer` 命名空间下）：
+- 标准图层：`new AMap.TileLayer()`
+- 卫星图层：`new AMap.TileLayer.Satellite()`
+- 路网图层：`new AMap.TileLayer.RoadNet({ zIndex: 10 })`
+- 路况图层：`new AMap.TileLayer.Traffic({ zIndex: 11 })`
+
+### 图层管理方法
+- `map.add(layer)` — 添加图层
+- `map.remove(layer)` — 移除图层
+- `map.remove([layer1, layer2])` — 批量移除
+- 不推荐使用 `map.setLayers()` 管理图层，改用 add/remove
+
+### 已实现右键菜单功能
+- **地图类型**：标准地图 / 卫星地图（两种切换，normal样式通过 setMapStyle 实现）
+- **路网**：点击切换显示/隐藏（合并为一个选项）
+- **路况**：点击切换显示/隐藏（合并为一个选项）
+
 ## 重要约束
 
 1. **前后端通信**：Flask 后端默认运行在 `http://localhost:5000`
 2. **PyWebView 加载**：桌面端自动启动 Flask 服务后再加载页面
 3. **地图服务商**：推荐高德地图（国内访问稳定）
 4. **API Key 管理**：存储在浏览器 localStorage，不提交到代码仓库
+5. **地图控件**：Scale（比例尺）、HawkEye（鹰眼，右下角）、ControlBar（控制栏，右上角）
+
+## 常见错误速查
+
+| 错误 | 原因 | 解决 |
+|------|------|------|
+| `AMap.RoadNet is not a constructor` | JS API 2.0 中类名变更 | 使用 `AMap.TileLayer.RoadNet()` |
+| `AMap.TrafficLayer is not a constructor` | 类名不存在 | 使用 `AMap.TileLayer.Traffic()` |
+| `setMapType is not a function` | 旧版 API 方法 | 改用 TileLayer + add/remove |
+| `mapStyle` 不生效 | 构造函数中设置无效 | 在 `complete` 事件中调用 `setMapStyle()` |
 
 ## 环境配置
 
