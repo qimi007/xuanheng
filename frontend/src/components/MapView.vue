@@ -122,8 +122,7 @@ const initMap = async () => {
       zoom: 10,
       center: [116.397428, 39.90923],
       viewMode: '2D',
-      showIndoorMap: false,
-      layers: [defaultLayer]
+      showIndoorMap: false
     })
 
     map.addControl(new window.AMap.Scale())
@@ -146,6 +145,7 @@ const initMap = async () => {
       console.log('地图加载完成')
       
       mapLoaded = true
+      updateLayers()
       updateMarkers()
       console.log('地图初始化完成, mapLoaded:', mapLoaded)
     })
@@ -233,18 +233,22 @@ const updateLayers = () => {
       trafficLayer = new window.AMap.TileLayer.Traffic({ zIndex: 11 })
     }
     
-    // 使用 setLayers 设置底图和路网/路况
-    const layers = [mapType.value === 'satellite' ? satelliteLayer : defaultLayer]
+    // 移除所有图层
+    map.remove([defaultLayer, satelliteLayer, roadNetLayer, trafficLayer])
     
+    // 添加底图
+    const baseLayer = mapType.value === 'satellite' ? satelliteLayer : defaultLayer
+    map.add(baseLayer)
+    
+    // 添加路网
     if (showRoadNet.value) {
-      layers.push(roadNetLayer)
-    }
-    if (showTraffic.value) {
-      layers.push(trafficLayer)
+      map.add(roadNetLayer)
     }
     
-    console.log('setLayers:', layers.map(l => l.CLASS_NAME))
-    map.setLayers(layers)
+    // 添加路况
+    if (showTraffic.value) {
+      map.add(trafficLayer)
+    }
   } catch (e) {
     console.error('更新图层失败:', e)
   }
