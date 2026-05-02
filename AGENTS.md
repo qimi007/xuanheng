@@ -1,4 +1,9 @@
-# 地图工具开发指南
+# 玄衡地图工具开发指南
+
+## 工具信息
+
+- **名称**：玄衡
+- **版本**：v1.0.0
 
 ## 项目技术栈
 
@@ -6,7 +11,7 @@
 - **前端**：Vue 3 + Vite + Pinia
 - **后端**：Flask + Waitress
 - **桌面端**：PyWebView
-- **地图服务**：高德地图 API（已完成）/ 百度地图 / Google Maps（待实现）
+- **地图服务**：高德地图 API（已完成）/ 百度地图 / Google Maps（暂不支持）
 
 ## 项目结构
 
@@ -87,9 +92,17 @@ python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗
    - 支持清空所有数据
 
 3. **设置**
-   - 地图服务商选择（高德/百度/Google）
+   - 地图服务商选择（高德已实现，百度/Google 暂不支持）
    - API Key 密文输入和显示切换
-   - 数据持久化到浏览器 localStorage
+   - 用户配置存储到本地文件 `D:/Magic/settings.json`
+   - 过期提示（剩余天数低于 10 天显示提醒，过期后强制要求填写）
+
+4. **预置 API Key 与过期机制**
+   - 预置高德地图 API Key（硬编码在 settings.js）
+   - 首次使用记录时间到本地文件
+   - 31 天后过期，过期后需填写用户 API Key
+   - localStorage 标记防止删除配置文件绕过
+   - 窗口标题显示激活状态和剩余天数
 
 4. **地图显示**
    - 高德地图集成
@@ -99,6 +112,8 @@ python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗
 
 ### 后端功能
 - `/api/health` - 健康检查接口
+- `/api/settings` - 读取/保存用户配置（存储到 D:/Magic/settings.json）
+- `/api/status` - 获取激活状态和剩余天数
 - `/` - 提供前端静态页面（Flask 托管 frontend/dist）
 
 ## 配色风格
@@ -143,7 +158,7 @@ JS API 2.0 中使用 TileLayer 子类管理图层，**不使用**以下写法：
 1. **前后端通信**：Flask 后端默认运行在 `http://localhost:5000`
 2. **PyWebView 加载**：桌面端自动启动 Flask 服务后再加载页面
 3. **地图服务商**：推荐高德地图（国内访问稳定）
-4. **API Key 管理**：存储在浏览器 localStorage，不提交到代码仓库
+4. **API Key 管理**：存储在本地文件 `D:/Magic/settings.json`，不提交到代码仓库
 5. **地图控件**：Scale（比例尺）、HawkEye（鹰眼，右下角）、ControlBar（控制栏，右上角）
 
 ## 常见错误速查
