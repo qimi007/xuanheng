@@ -5,20 +5,25 @@ export const useLocationStore = defineStore('locations', () => {
   const locationGroups = ref([])
   const visiblePoints = ref(new Set())
 
-  const addGroup = (name, coords, coordType) => {
+  const addGroup = (name, coords, coordType, extras = []) => {
     const id = Date.now().toString()
+    const cooSys = coordType === 'wgs84' ? 'W' : 'G'
+    
     const points = coords.map((coord, index) => ({
       id: `${id}-${index}`,
-      name: `点 ${index + 1}`,
+      tagName: extras[index]?.tagName || `点 ${index + 1}`,
+      cooSys: cooSys,
       lng: coord.lng,
       lat: coord.lat,
-      coordType
+      alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
+      extra: extras[index]?.extra || {}
     }))
+    
     locationGroups.value.push({
       id,
       name,
       points,
-      coordType,
+      cooSys,
       visible: true
     })
     points.forEach(p => visiblePoints.value.add(p.id))
@@ -44,6 +49,25 @@ export const useLocationStore = defineStore('locations', () => {
 
   const isPointVisible = (pointId) => visiblePoints.value.has(pointId)
 
+  const updateGroupName = (groupId, newName) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (group) {
+      group.name = newName
+      saveLocations()
+    }
+  }
+
+  const updatePointName = (pointId, newName) => {
+    for (const group of locationGroups.value) {
+      const point = group.points.find(p => p.id === pointId)
+      if (point) {
+        point.tagName = newName
+        saveLocations()
+        return
+      }
+    }
+  }
+
   const saveLocations = () => {
     localStorage.setItem('map-locations', JSON.stringify({
       groups: locationGroups.value,
@@ -68,5 +92,15 @@ export const useLocationStore = defineStore('locations', () => {
 
   loadLocations()
 
-  return { locationGroups, visiblePoints, addGroup, toggleGroup, togglePoint, isPointVisible, clearAll }
+  return { 
+    locationGroups, 
+    visiblePoints, 
+    addGroup, 
+    toggleGroup, 
+    togglePoint, 
+    isPointVisible, 
+    clearAll,
+    updateGroupName,
+    updatePointName
+  }
 })

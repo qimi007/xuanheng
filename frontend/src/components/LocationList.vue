@@ -20,7 +20,20 @@
         <div v-for="group in locationStore.locationGroups" :key="group.id" class="group">
           <div class="group-row" @click="locationStore.toggleGroup(group.id)">
             <span class="expand-icon">{{ group.visible ? '▼' : '▶' }}</span>
-            <span class="group-name">{{ group.name }}</span>
+            <input
+              v-if="editingGroupId === group.id"
+              v-model="editingGroupName"
+              class="group-name-input"
+              @blur="saveGroupName(group.id)"
+              @keyup.enter="saveGroupName(group.id)"
+              @click.stop
+              ref="groupNameInput"
+            />
+            <span 
+              v-else 
+              class="group-name"
+              @dblclick.stop="startEditGroup(group)"
+            >{{ group.name }}</span>
             <span class="group-count">{{ group.points.length }}点</span>
           </div>
 
@@ -32,9 +45,23 @@
                   :checked="locationStore.isPointVisible(point.id)"
                   @change="locationStore.togglePoint(point.id)"
                 />
-                <span class="point-name">{{ point.name }}</span>
               </label>
-              <span class="point-coord">{{ point.lng.toFixed(4) }}, {{ point.lat.toFixed(4) }}</span>
+              <input
+                v-if="editingPointId === point.id"
+                v-model="editingPointName"
+                class="point-name-input"
+                @blur="savePointName(point.id)"
+                @keyup.enter="savePointName(point.id)"
+                @click.stop
+                ref="pointNameInput"
+              />
+              <span 
+                v-else 
+                class="point-name"
+                @dblclick.stop="startEditPoint(point)"
+              >{{ point.tagName }}</span>
+              <span class="point-coordsys">[{{ point.cooSys }}]</span>
+              <span class="point-coord">{{ point.lng.toFixed(6) }}, {{ point.lat.toFixed(6) }}</span>
             </div>
           </div>
         </div>
@@ -44,11 +71,56 @@
 </template>
 
 <script setup>
+import { ref, nextTick } from 'vue'
 import { useLocationStore } from '../stores/locations'
 
 defineEmits(['close'])
 
 const locationStore = useLocationStore()
+
+const editingGroupId = ref(null)
+const editingGroupName = ref('')
+const groupNameInput = ref(null)
+
+const editingPointId = ref(null)
+const editingPointName = ref('')
+const pointNameInput = ref(null)
+
+const startEditGroup = (group) => {
+  editingGroupId.value = group.id
+  editingGroupName.value = group.name
+  nextTick(() => {
+    if (groupNameInput.value && groupNameInput.value[0]) {
+      groupNameInput.value[0].focus()
+    }
+  })
+}
+
+const saveGroupName = (groupId) => {
+  if (editingGroupName.value.trim()) {
+    locationStore.updateGroupName(groupId, editingGroupName.value.trim())
+  }
+  editingGroupId.value = null
+  editingGroupName.value = ''
+}
+
+const startEditPoint = (point) => {
+  editingPointId.value = point.id
+  editingPointName.value = point.tagName
+  nextTick(() => {
+    if (pointNameInput.value && pointNameInput.value[0]) {
+      pointNameInput.value[0].focus()
+    }
+  })
+}
+
+const savePointName = (pointId) => {
+  if (editingPointName.value.trim()) {
+    locationStore.updatePointName(pointId, editingPointName.value.trim())
+  }
+  editingPointId.value = null
+  editingPointName.value = ''
+}
 
 const handleClear = () => {
   if (confirm('确定清空所有位置？')) {
@@ -173,10 +245,6 @@ const handleClear = () => {
   background: linear-gradient(135deg, #f0f0f8 0%, #e8e8f5 100%);
 }
 
-.group-row:hover {
-  background: #f0f0f0;
-}
-
 .expand-icon {
   font-size: 10px;
   color: #888;
@@ -186,6 +254,16 @@ const handleClear = () => {
   flex: 1;
   font-size: 13px;
   font-weight: 500;
+}
+
+.group-name-input {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border: 1px solid #7986cb;
+  border-radius: 4px;
+  outline: none;
 }
 
 .group-count {
@@ -200,7 +278,7 @@ const handleClear = () => {
 .point-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid #f8f8f8;
 }
@@ -212,7 +290,6 @@ const handleClear = () => {
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
   cursor: pointer;
 }
 
@@ -222,6 +299,22 @@ const handleClear = () => {
 
 .point-name {
   font-size: 12px;
+  min-width: 60px;
+}
+
+.point-name-input {
+  font-size: 12px;
+  min-width: 60px;
+  padding: 2px 6px;
+  border: 1px solid #7986cb;
+  border-radius: 4px;
+  outline: none;
+}
+
+.point-coordsys {
+  font-size: 11px;
+  color: #5c6bc0;
+  font-weight: 500;
 }
 
 .point-coord {
