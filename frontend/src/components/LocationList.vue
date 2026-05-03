@@ -34,6 +34,14 @@
             </select>
           </div>
           <div class="form-item">
+            <label class="form-label">输入方式</label>
+            <div class="btn-group">
+              <button :class="{ active: addInputMethod === 'manual' }" @click="addInputMethod = 'manual'">手动</button>
+              <button :class="{ active: addInputMethod === 'pos' }" @click="addInputMethod = 'pos'">POS文件</button>
+              <button :class="{ active: addInputMethod === 'log' }" @click="addInputMethod = 'log'">日志</button>
+            </div>
+          </div>
+          <div v-if="addInputMethod === 'manual'" class="form-item">
             <label class="form-label">坐标输入</label>
             <textarea
               v-model="addCoordinates"
@@ -41,6 +49,15 @@
               placeholder="示例: 116.397428,39.90923; 116.397428,39.91923"
             ></textarea>
             <p class="form-hint">多个点用分号(;)分隔，不区分经纬度顺序</p>
+          </div>
+          <div v-else class="form-item">
+            <label class="form-label">文件路径</label>
+            <input
+              type="text"
+              v-model="addFilePath"
+              class="form-input"
+              :placeholder="addInputMethod === 'pos' ? '输入POS文件路径' : '输入日志文件路径'"
+            />
           </div>
           <button class="btn-submit" @click="handleAddPoints">添加</button>
         </div>
@@ -181,7 +198,9 @@ const searchKeyword = ref('')
 const showAddDialog = ref(false)
 const addToGroupId = ref(null)
 const addCoordType = ref('wgs84')
+const addInputMethod = ref('manual')
 const addCoordinates = ref('')
+const addFilePath = ref('')
 
 const showDeleteDialog = ref(false)
 const deleteGroup = ref(null)
@@ -255,7 +274,9 @@ const toggleGroupSelectAll = (groupId) => {
 const openAddDialog = (groupId) => {
   addToGroupId.value = groupId
   addCoordType.value = 'wgs84'
+  addInputMethod.value = 'manual'
   addCoordinates.value = ''
+  addFilePath.value = ''
   showAddDialog.value = true
 }
 
@@ -285,11 +306,19 @@ const parseCoordinates = (text) => {
 }
 
 const handleAddPoints = () => {
-  const coords = parseCoordinates(addCoordinates.value)
-  if (coords.length === 0) {
-    alert('请输入有效的坐标')
+  let coords = []
+  
+  if (addInputMethod.value === 'manual') {
+    coords = parseCoordinates(addCoordinates.value)
+    if (coords.length === 0) {
+      alert('请输入有效的坐标')
+      return
+    }
+  } else {
+    alert('文件加载功能待实现')
     return
   }
+  
   locationStore.addPointsToGroup(addToGroupId.value, coords, addCoordType.value)
   closeAddDialog()
 }
@@ -810,6 +839,42 @@ const handleClear = () => {
 .add-dialog .form-hint {
   font-size: 10px;
   color: #888;
+}
+
+.add-dialog .btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.add-dialog .btn-group button {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.add-dialog .btn-group button.active {
+  background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.add-dialog .form-input {
+  padding: 8px 10px;
+  border: 1px solid #e0e0e8;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #f8f8fc;
+}
+
+.add-dialog .form-input:focus {
+  outline: none;
+  border-color: #7986cb;
 }
 
 .add-dialog .btn-submit {
