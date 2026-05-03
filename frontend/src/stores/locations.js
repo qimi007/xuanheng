@@ -18,32 +18,57 @@ export const useLocationStore = defineStore('locations', () => {
   const selectedPoints = ref(new Set())
 
   const addGroup = (name, coords, coordType, extras = []) => {
-    const id = Date.now().toString()
     const cooSys = coordType === 'wgs84' ? 'W' : 'G'
     
-    const points = coords.map((coord, index) => {
-      const timestamp = extras[index]?.time || Date.now()
-      return {
-        id: `${id}-${index}`,
-        tagName: extras[index]?.tagName || `点 ${index + 1}`,
-        cooSys: cooSys,
-        lng: coord.lng,
-        lat: coord.lat,
-        alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
-        time: timestamp,
-        datetime: formatDateTime(timestamp),
-        extra: extras[index]?.extra || {}
-      }
-    })
+    // 检查是否存在同名分组
+    const existingGroup = locationGroups.value.find(g => g.name === name)
     
-    locationGroups.value.push({
-      id,
-      name,
-      points,
-      cooSys,
-      visible: true
-    })
-    points.forEach(p => visiblePoints.value.add(p.id))
+    if (existingGroup) {
+      // 添加到已有分组
+      const startIndex = existingGroup.points.length
+      const newPoints = coords.map((coord, index) => {
+        const timestamp = extras[index]?.time || Date.now()
+        return {
+          id: `${existingGroup.id}-${startIndex + index}`,
+          tagName: extras[index]?.tagName || `点 ${startIndex + index + 1}`,
+          cooSys: cooSys,
+          lng: coord.lng,
+          lat: coord.lat,
+          alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
+          time: timestamp,
+          datetime: formatDateTime(timestamp),
+          extra: extras[index]?.extra || {}
+        }
+      })
+      existingGroup.points.push(...newPoints)
+      newPoints.forEach(p => visiblePoints.value.add(p.id))
+    } else {
+      // 创建新分组
+      const id = Date.now().toString()
+      const points = coords.map((coord, index) => {
+        const timestamp = extras[index]?.time || Date.now()
+        return {
+          id: `${id}-${index}`,
+          tagName: extras[index]?.tagName || `点 ${index + 1}`,
+          cooSys: cooSys,
+          lng: coord.lng,
+          lat: coord.lat,
+          alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
+          time: timestamp,
+          datetime: formatDateTime(timestamp),
+          extra: extras[index]?.extra || {}
+        }
+      })
+      
+      locationGroups.value.push({
+        id,
+        name,
+        points,
+        cooSys,
+        visible: true
+      })
+      points.forEach(p => visiblePoints.value.add(p.id))
+    }
     saveLocations()
   }
 
