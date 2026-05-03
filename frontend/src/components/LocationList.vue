@@ -107,11 +107,13 @@ const copyCoords = (point) => {
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
-  const day = date.getDate()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
-  return `${day}-${hours}:${minutes}:${seconds}`
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const startEditGroup = (group) => {
@@ -328,8 +330,8 @@ const handleClear = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  line-height: 1.3;
+  gap: 0;
+  line-height: 1.2;
 }
 
 .point-name-row {
@@ -358,13 +360,13 @@ const handleClear = () => {
 }
 
 .point-coordsys {
-  font-size: 9px;
+  font-size: 10px;
   color: #5c6bc0;
   font-weight: 500;
 }
 
 .point-coord {
-  font-size: 9px;
+  font-size: 10px;
   color: #333;
   font-family: monospace;
   font-weight: 600;
@@ -376,7 +378,7 @@ const handleClear = () => {
 }
 
 .point-time {
-  font-size: 9px;
+  font-size: 10px;
   color: #333;
   font-weight: 600;
   margin-left: auto;
