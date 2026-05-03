@@ -16,6 +16,7 @@ export const useLocationStore = defineStore('locations', () => {
   const locationGroups = ref([])
   const visiblePoints = ref(new Set())
   const selectedPoints = ref(new Set())
+  const groupShowTrack = ref(new Set())
 
   const addGroup = (name, coords, coordType, extras = []) => {
     const cooSys = coordType === 'wgs84' ? 'W' : 'G'
@@ -119,6 +120,22 @@ export const useLocationStore = defineStore('locations', () => {
     return group.points.every(p => selectedPoints.value.has(p.id))
   }
 
+  const toggleGroupShowTrack = (groupId) => {
+    if (groupShowTrack.value.has(groupId)) {
+      groupShowTrack.value.delete(groupId)
+    } else {
+      groupShowTrack.value.add(groupId)
+    }
+  }
+
+  const isGroupShowTrack = (groupId) => groupShowTrack.value.has(groupId)
+
+  const getGroupSelectedPoints = (groupId) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (!group) return []
+    return group.points.filter(p => selectedPoints.value.has(p.id))
+  }
+
   const addPointsToGroup = (groupId, coords, coordType, extras = []) => {
     const group = locationGroups.value.find(g => g.id === groupId)
     if (!group) return
@@ -211,6 +228,7 @@ export const useLocationStore = defineStore('locations', () => {
     locationGroups, 
     visiblePoints,
     selectedPoints,
+    groupShowTrack,
     addGroup, 
     toggleGroup, 
     togglePoint, 
@@ -219,6 +237,9 @@ export const useLocationStore = defineStore('locations', () => {
     isPointSelected,
     toggleGroupSelectAll,
     isGroupAllSelected,
+    toggleGroupShowTrack,
+    isGroupShowTrack,
+    getGroupSelectedPoints,
     addPointsToGroup,
     deleteSelectedPoints,
     getSelectedPointsInGroup,

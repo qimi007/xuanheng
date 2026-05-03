@@ -116,6 +116,11 @@
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
               </button>
+              <button class="action-btn" @click.stop="toggleShowTrack(group.id)" title="显示轨迹">
+                <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupShowTrack(group.id) }">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              </button>
               <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">
                 <svg viewBox="0 0 24 24" class="action-icon">
                   <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -269,6 +274,10 @@ const formatTime = (timestamp) => {
 
 const toggleGroupSelectAll = (groupId) => {
   locationStore.toggleGroupSelectAll(groupId)
+}
+
+const toggleShowTrack = (groupId) => {
+  locationStore.toggleGroupShowTrack(groupId)
 }
 
 const openAddDialog = (groupId) => {
