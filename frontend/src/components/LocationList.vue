@@ -338,9 +338,48 @@ const handleClear = () => {
 }
 
 .point-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.point-name:hover {
+  color: #5c6bc0;
+}
+
+.point-name-input {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border: 1px solid #7986cb;
+  border-radius: 3px;
+  outline: none;
+  width: 80px;
+}
+
+.point-coordsys {
+  font-size: 9px;
+  color: #5c6bc0;
+  font-weight: 500;
+}
+
+.point-coord {
+  font-size: 9px;
+  color: #333;
+  font-family: monospace;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.point-coord:hover {
+  color: #5c6bc0;
+}
+
+.point-time {
+  font-size: 9px;
+  color: #333;
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .point-name:hover {
