@@ -504,7 +504,7 @@ const handleClear = () => {
 
 .group-actions {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   margin-left: auto;
 }
 
