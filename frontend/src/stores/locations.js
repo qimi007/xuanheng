@@ -123,9 +123,12 @@ export const useLocationStore = defineStore('locations', () => {
 
   const deleteSelectedPoints = () => {
     const selectedIds = new Set(selectedPoints.value)
-    locationGroups.value.forEach(group => {
-      group.points = group.points.filter(p => !selectedIds.has(p.id))
-    })
+    locationGroups.value = locationGroups.value
+      .map(group => ({
+        ...group,
+        points: group.points.filter(p => !selectedIds.has(p.id))
+      }))
+      .filter(group => group.points.length > 0)
     selectedPoints.value.clear()
     saveLocations()
   }
