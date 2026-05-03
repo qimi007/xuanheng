@@ -71,13 +71,13 @@
               @click.stop
               ref="groupNameInput"
             />
-            <span 
+<span 
               v-else 
               class="group-name"
               @dblclick.stop="startEditGroup(group)"
             >{{ group.name }}</span>
-            <span class="group-count">({{ group.filteredPoints.length }})</span>
-<div class="group-actions">
+            <span class="group-count">{{ group.filteredPoints.length }}点</span>
+            <div class="group-actions">
               <button class="action-btn" @click.stop="toggleGroupSelectAll(group.id)" title="全选">
                 <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupAllSelected(group.id) }">
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
