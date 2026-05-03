@@ -77,13 +77,27 @@
               @dblclick.stop="startEditGroup(group)"
             >{{ group.name }}</span>
             <span class="group-count">({{ group.filteredPoints.length }})</span>
-            <div class="group-actions">
-<button class="action-btn" @click.stop="toggleGroupSelectAll(group.id)" title="全选">
-                <span :class="{ allSelected: locationStore.isGroupAllSelected(group.id) }">☑</span>
+<div class="group-actions">
+              <button class="action-btn" @click.stop="toggleGroupSelectAll(group.id)" title="全选">
+                <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupAllSelected(group.id) }">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
               </button>
-              <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">+</button>
-              <button class="action-btn" @click.stop="deleteSelectedInGroup(group.id)" title="删除选中">🗑</button>
-              <button class="action-btn" @click.stop="exportGroup(group.id)" title="导出">↓</button>
+              <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">
+                <svg viewBox="0 0 24 24" class="action-icon">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+              </button>
+              <button class="action-btn" @click.stop="deleteSelectedInGroup(group.id)" title="删除选中">
+                <svg viewBox="0 0 24 24" class="action-icon">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+              </button>
+              <button class="action-btn" @click.stop="exportGroup(group.id)" title="导出">
+                <svg viewBox="0 0 24 24" class="action-icon">
+                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -490,19 +504,18 @@ const handleClear = () => {
 
 .group-actions {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   margin-left: auto;
 }
 
 .action-btn {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
+  padding: 3px;
   border: none;
   background: rgba(92, 107, 192, 0.1);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
-  color: #5c6bc0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -510,12 +523,17 @@ const handleClear = () => {
 }
 
 .action-btn:hover {
-  background: rgba(92, 107, 192, 0.3);
+  background: rgba(92, 107, 192, 0.25);
 }
 
-.action-btn .allSelected {
-  color: #5c6bc0;
-  font-weight: bold;
+.action-icon {
+  width: 16px;
+  height: 16px;
+  fill: #5c6bc0;
+}
+
+.action-icon.active {
+  fill: #3949ab;
 }
 
 .expand-icon {
