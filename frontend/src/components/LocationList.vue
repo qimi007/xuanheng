@@ -123,7 +123,7 @@
                 :disabled="locationStore.getSelectedPointsInGroup(group.id).length === 0"
               >
                 <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupShowTrack(group.id), disabled: locationStore.getSelectedPointsInGroup(group.id).length === 0 }">
-                  <path d="M9 11c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm6-5c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm-6 8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                  <path d="M3.5 18.5l6-6 4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
               <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">
@@ -590,9 +590,9 @@ const handleClear = () => {
 }
 
 .action-btn {
-  width: 22px;
-  height: 22px;
-  padding: 3px;
+  width: 20px;
+  height: 20px;
+  padding: 2px;
   border: none;
   background: rgba(92, 107, 192, 0.1);
   border-radius: 4px;
@@ -608,8 +608,8 @@ const handleClear = () => {
 }
 
 .action-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   fill: #5c6bc0;
 }
 
