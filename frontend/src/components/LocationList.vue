@@ -5,19 +5,33 @@
       <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
+    <div class="search-box" v-if="totalPoints > 0">
+      <select v-model="searchType" class="search-type">
+        <option value="name">名称</option>
+        <option value="coords">经纬度</option>
+        <option value="time">时间</option>
+      </select>
+      <input 
+        v-model="searchKeyword" 
+        class="search-input" 
+        placeholder="搜索..."
+        @input="handleSearch"
+      />
+    </div>
+
     <div class="list-content">
-      <div class="list-header" v-if="locationStore.locationGroups.length > 0">
+      <div class="list-header" v-if="locationStore.locationGroups.length > 0 && !searchKeyword">
         <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
         <button class="btn-clear" @click="handleClear">清空</button>
       </div>
 
-      <div v-if="locationStore.locationGroups.length === 0" class="empty">
+      <div v-if="totalPoints === 0" class="empty">
         <p>暂无位置数据</p>
         <p class="empty-hint">请先添加位置</p>
       </div>
 
       <div v-else class="groups">
-        <div v-for="group in locationStore.locationGroups" :key="group.id" class="group">
+        <div v-for="group in filteredGroups" :key="group.id" class="group">
           <div class="group-row" @click="locationStore.toggleGroup(group.id)">
             <span class="expand-icon">{{ group.visible ? '▼' : '▶' }}</span>
             <input
@@ -34,11 +48,11 @@
               class="group-name"
               @dblclick.stop="startEditGroup(group)"
             >{{ group.name }}</span>
-            <span class="group-count">{{ group.points.length }}点</span>
+            <span class="group-count">{{ group.filteredPoints.length }}点</span>
           </div>
 
           <div v-if="group.visible" class="points">
-            <div v-for="point in group.points" :key="point.id" class="point-item">
+            <div v-for="point in group.filteredPoints" :key="point.id" class="point-item">
               <div class="point-checkbox">
                 <input
                   type="checkbox"
@@ -79,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { useLocationStore } from '../stores/locations'
 
 defineEmits(['close'])
@@ -94,6 +108,48 @@ const editingPointId = ref(null)
 const editingPointName = ref('')
 const pointNameInput = ref(null)
 const copiedPointId = ref(null)
+
+const searchType = ref('name')
+const searchKeyword = ref('')
+
+const totalPoints = computed(() => {
+  return locationStore.locationGroups.reduce((sum, g) => sum + g.points.length, 0)
+})
+
+const handleSearch = () => {
+  // 搜索逻辑由 computed 属性处理
+}
+
+const isPointMatched = (point) => {
+  if (!searchKeyword.value) return true
+  const keyword = searchKeyword.value.toLowerCase()
+  
+  if (searchType.value === 'name') {
+    return point.tagName.toLowerCase().includes(keyword)
+  } else if (searchType.value === 'coords') {
+    const coords = `${point.lng.toFixed(6)},${point.lat.toFixed(6)}`
+    return coords.includes(keyword)
+  } else if (searchType.value === 'time') {
+    const timeStr = point.datetime || formatTime(point.time)
+    return timeStr.toLowerCase().includes(keyword)
+  }
+  return true
+}
+
+const filteredGroups = computed(() => {
+  if (!searchKeyword.value) {
+    return locationStore.locationGroups.map(g => ({
+      ...g,
+      filteredPoints: g.points
+    }))
+  }
+  return locationStore.locationGroups
+    .map(g => ({
+      ...g,
+      filteredPoints: g.points.filter(isPointMatched)
+    }))
+    .filter(g => g.filteredPoints.length > 0)
+})
 
 const copyCoords = (point) => {
   const text = `${point.lng.toFixed(6)},${point.lat.toFixed(6)}`
@@ -195,6 +251,37 @@ const handleClear = () => {
 
 .close-btn:hover {
   background: rgba(92, 107, 192, 0.2);
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8eaf6;
+}
+
+.search-type {
+  padding: 4px 8px;
+  border: 1px solid #e0e0e8;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #f8f8fc;
+  color: #5c6bc0;
+  cursor: pointer;
+}
+
+.search-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #e0e0e8;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #f8f8fc;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #7986cb;
 }
 
 .list-content {
