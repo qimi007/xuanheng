@@ -116,9 +116,14 @@
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
               </button>
-              <button class="action-btn" @click.stop="toggleShowTrack(group.id)" title="显示轨迹">
-                <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupShowTrack(group.id) }">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              <button 
+                class="action-btn" 
+                @click.stop="toggleShowTrack(group.id)" 
+                title="显示轨迹"
+                :disabled="locationStore.getSelectedPointsInGroup(group.id).length === 0"
+              >
+                <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupShowTrack(group.id), disabled: locationStore.getSelectedPointsInGroup(group.id).length === 0 }">
+                  <path d="M9 11c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm6-5c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm-6 8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                 </svg>
               </button>
               <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">
@@ -610,6 +615,15 @@ const handleClear = () => {
 
 .action-icon.active {
   fill: #3949ab;
+}
+
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.action-btn:disabled .action-icon.disabled {
+  fill: #999;
 }
 
 .expand-icon {
