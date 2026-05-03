@@ -15,6 +15,7 @@ const formatDateTime = (timestamp) => {
 export const useLocationStore = defineStore('locations', () => {
   const locationGroups = ref([])
   const visiblePoints = ref(new Set())
+  const selectedPoints = ref(new Set())
 
   const addGroup = (name, coords, coordType, extras = []) => {
     const id = Date.now().toString()
@@ -65,6 +66,76 @@ export const useLocationStore = defineStore('locations', () => {
 
   const isPointVisible = (pointId) => visiblePoints.value.has(pointId)
 
+  const toggleSelectedPoint = (pointId) => {
+    if (selectedPoints.value.has(pointId)) {
+      selectedPoints.value.delete(pointId)
+    } else {
+      selectedPoints.value.add(pointId)
+    }
+  }
+
+  const isPointSelected = (pointId) => selectedPoints.value.has(pointId)
+
+  const toggleGroupSelectAll = (groupId) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (!group) return
+    
+    const allSelected = group.points.every(p => selectedPoints.value.has(p.id))
+    if (allSelected) {
+      group.points.forEach(p => selectedPoints.value.delete(p.id))
+    } else {
+      group.points.forEach(p => selectedPoints.value.add(p.id))
+    }
+  }
+
+  const isGroupAllSelected = (groupId) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (!group || group.points.length === 0) return false
+    return group.points.every(p => selectedPoints.value.has(p.id))
+  }
+
+  const addPointsToGroup = (groupId, coords, coordType, extras = []) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (!group) return
+    
+    const cooSys = coordType === 'wgs84' ? 'W' : 'G'
+    const startIndex = group.points.length
+    
+    const newPoints = coords.map((coord, index) => {
+      const timestamp = extras[index]?.time || Date.now()
+      return {
+        id: `${groupId}-${startIndex + index}`,
+        tagName: extras[index]?.tagName || `点 ${startIndex + index + 1}`,
+        cooSys: cooSys,
+        lng: coord.lng,
+        lat: coord.lat,
+        alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
+        time: timestamp,
+        datetime: formatDateTime(timestamp),
+        extra: extras[index]?.extra || {}
+      }
+    })
+    
+    group.points.push(...newPoints)
+    newPoints.forEach(p => visiblePoints.value.add(p.id))
+    saveLocations()
+  }
+
+  const deleteSelectedPoints = () => {
+    const selectedIds = new Set(selectedPoints.value)
+    locationGroups.value.forEach(group => {
+      group.points = group.points.filter(p => !selectedIds.has(p.id))
+    })
+    selectedPoints.value.clear()
+    saveLocations()
+  }
+
+  const getSelectedPointsInGroup = (groupId) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (!group) return []
+    return group.points.filter(p => selectedPoints.value.has(p.id))
+  }
+
   const updateGroupName = (groupId, newName) => {
     const group = locationGroups.value.find(g => g.id === groupId)
     if (group) {
@@ -110,11 +181,19 @@ export const useLocationStore = defineStore('locations', () => {
 
   return { 
     locationGroups, 
-    visiblePoints, 
+    visiblePoints,
+    selectedPoints,
     addGroup, 
     toggleGroup, 
     togglePoint, 
-    isPointVisible, 
+    isPointVisible,
+    toggleSelectedPoint,
+    isPointSelected,
+    toggleGroupSelectAll,
+    isGroupAllSelected,
+    addPointsToGroup,
+    deleteSelectedPoints,
+    getSelectedPointsInGroup,
     clearAll,
     updateGroupName,
     updatePointName

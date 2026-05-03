@@ -19,6 +19,34 @@
       />
     </div>
 
+    <div v-if="showAddDialog" class="add-dialog-overlay" @click="closeAddDialog">
+      <div class="add-dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>添加位置点</h3>
+          <button class="close-btn" @click="closeAddDialog">✕</button>
+        </div>
+        <div class="dialog-content">
+          <div class="form-item">
+            <label class="form-label">坐标系</label>
+            <select v-model="addCoordType" class="form-select">
+              <option value="wgs84">WGS84 (GPS坐标)</option>
+              <option value="gcj02">GCJ-02 (国测局坐标)</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label class="form-label">坐标输入</label>
+            <textarea
+              v-model="addCoordinates"
+              class="form-textarea"
+              placeholder="示例: 116.397428,39.90923; 116.397428,39.91923"
+            ></textarea>
+            <p class="form-hint">多个点用分号(;)分隔，不区分经纬度顺序</p>
+          </div>
+          <button class="btn-submit" @click="handleAddPoints">添加</button>
+        </div>
+      </div>
+    </div>
+
     <div class="list-content">
       <div class="list-header" v-if="locationStore.locationGroups.length > 0 && !searchKeyword">
         <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
@@ -32,8 +60,8 @@
 
       <div v-else class="groups">
         <div v-for="group in filteredGroups" :key="group.id" class="group">
-          <div class="group-row" @click="locationStore.toggleGroup(group.id)">
-            <span class="expand-icon">{{ group.visible ? '▼' : '▶' }}</span>
+          <div class="group-row">
+            <span class="expand-icon" @click.stop="locationStore.toggleGroup(group.id)">{{ group.visible ? '▼' : '▶' }}</span>
             <input
               v-if="editingGroupId === group.id"
               v-model="editingGroupName"
@@ -48,7 +76,15 @@
               class="group-name"
               @dblclick.stop="startEditGroup(group)"
             >{{ group.name }}</span>
-            <span class="group-count">{{ group.filteredPoints.length }}点</span>
+            <span class="group-count">({{ group.filteredPoints.length }})</span>
+            <div class="group-actions">
+<button class="action-btn" @click.stop="toggleGroupSelectAll(group.id)" title="全选">
+                <span :class="{ allSelected: locationStore.isGroupAllSelected(group.id) }">☑</span>
+              </button>
+              <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">+</button>
+              <button class="action-btn" @click.stop="deleteSelectedInGroup(group.id)" title="删除选中">🗑</button>
+              <button class="action-btn" @click.stop="exportGroup(group.id)" title="导出">↓</button>
+            </div>
           </div>
 
           <div v-if="group.visible" class="points">
@@ -56,8 +92,8 @@
               <div class="point-checkbox">
                 <input
                   type="checkbox"
-                  :checked="locationStore.isPointVisible(point.id)"
-                  @change="locationStore.togglePoint(point.id)"
+                  :checked="locationStore.isPointSelected(point.id)"
+                  @change="locationStore.toggleSelectedPoint(point.id)"
                 />
               </div>
               <div class="point-info">
@@ -111,6 +147,11 @@ const copiedPointId = ref(null)
 
 const searchType = ref('name')
 const searchKeyword = ref('')
+
+const showAddDialog = ref(false)
+const addToGroupId = ref(null)
+const addCoordType = ref('wgs84')
+const addCoordinates = ref('')
 
 const totalPoints = computed(() => {
   return locationStore.locationGroups.reduce((sum, g) => sum + g.points.length, 0)
@@ -170,6 +211,91 @@ const formatTime = (timestamp) => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+const toggleGroupSelectAll = (groupId) => {
+  locationStore.toggleGroupSelectAll(groupId)
+}
+
+const openAddDialog = (groupId) => {
+  addToGroupId.value = groupId
+  addCoordType.value = 'wgs84'
+  addCoordinates.value = ''
+  showAddDialog.value = true
+}
+
+const closeAddDialog = () => {
+  showAddDialog.value = false
+  addToGroupId.value = null
+}
+
+const parseCoordinates = (text) => {
+  const points = text.split(';').map(s => s.trim()).filter(s => s)
+  const result = []
+  for (const point of points) {
+    const parts = point.split(',').map(s => s.trim())
+    if (parts.length >= 2) {
+      const num1 = parseFloat(parts[0])
+      const num2 = parseFloat(parts[1])
+      if (!isNaN(num1) && !isNaN(num2)) {
+        if (Math.abs(num1) > Math.abs(num2)) {
+          result.push({ lng: num1, lat: num2 })
+        } else {
+          result.push({ lng: num2, lat: num1 })
+        }
+      }
+    }
+  }
+  return result
+}
+
+const handleAddPoints = () => {
+  const coords = parseCoordinates(addCoordinates.value)
+  if (coords.length === 0) {
+    alert('请输入有效的坐标')
+    return
+  }
+  locationStore.addPointsToGroup(addToGroupId.value, coords, addCoordType.value)
+  closeAddDialog()
+}
+
+const deleteSelectedInGroup = (groupId) => {
+  const selectedCount = locationStore.getSelectedPointsInGroup(groupId).length
+  if (selectedCount === 0) {
+    alert('请先选择要删除的点')
+    return
+  }
+  if (confirm(`确定删除选中的 ${selectedCount} 个点吗？`)) {
+    locationStore.deleteSelectedPoints()
+  }
+}
+
+const exportGroup = (groupId) => {
+  const group = locationStore.locationGroups.find(g => g.id === groupId)
+  if (!group) return
+  
+  const selectedPoints = locationStore.getSelectedPointsInGroup(groupId)
+  if (selectedPoints.length === 0) {
+    alert('请先选择要导出的点')
+    return
+  }
+  
+  const now = new Date()
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+  const filename = `${group.name}-${timestamp}.pos`
+  
+  let content = ''
+  selectedPoints.forEach(p => {
+    content += `${p.lng.toFixed(6)},${p.lat.toFixed(6)},${p.alt},${p.tagName},${p.cooSys},${p.datetime}\n`
+  })
+  
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 const startEditGroup = (group) => {
@@ -362,6 +488,36 @@ const handleClear = () => {
   background: linear-gradient(135deg, #f0f0f8 0%, #e8e8f5 100%);
 }
 
+.group-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.action-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(92, 107, 192, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #5c6bc0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: rgba(92, 107, 192, 0.3);
+}
+
+.action-btn .allSelected {
+  color: #5c6bc0;
+  font-weight: bold;
+}
+
 .expand-icon {
   font-size: 10px;
   color: #888;
@@ -522,5 +678,96 @@ const handleClear = () => {
   font-size: 7px;
   color: #5c6bc0;
   font-weight: 500;
+}
+
+.add-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.add-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.add-dialog .dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.add-dialog .dialog-header h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.add-dialog .dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-dialog .form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.add-dialog .form-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+}
+
+.add-dialog .form-select,
+.add-dialog .form-textarea {
+  padding: 8px 10px;
+  border: 1px solid #e0e0e8;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #f8f8fc;
+}
+
+.add-dialog .form-select:focus,
+.add-dialog .form-textarea:focus {
+  outline: none;
+  border-color: #7986cb;
+}
+
+.add-dialog .form-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.add-dialog .form-hint {
+  font-size: 10px;
+  color: #888;
+}
+
+.add-dialog .btn-submit {
+  padding: 8px;
+  background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.add-dialog .btn-submit:hover {
+  background: #5c6bc0;
 }
 </style>
