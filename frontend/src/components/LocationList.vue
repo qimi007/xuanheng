@@ -47,6 +47,22 @@
       </div>
     </div>
 
+    <div v-if="showDeleteDialog" class="add-dialog-overlay" @click="closeDeleteDialog">
+      <div class="delete-dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>{{ deleteGroup?.name }}删除位置点提醒</h3>
+          <button class="close-btn" @click="closeDeleteDialog">✕</button>
+        </div>
+        <div class="dialog-content">
+          <p class="delete-message">确定要删除{{ deletePointNames }}共{{ deletePointCount }}点吗?</p>
+          <div class="delete-actions">
+            <button class="btn-cancel" @click="closeDeleteDialog">取消</button>
+            <button class="btn-confirm" @click="confirmDelete">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="list-content">
       <div class="list-header" v-if="locationStore.locationGroups.length > 0 && !searchKeyword">
         <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
@@ -167,6 +183,11 @@ const addToGroupId = ref(null)
 const addCoordType = ref('wgs84')
 const addCoordinates = ref('')
 
+const showDeleteDialog = ref(false)
+const deleteGroup = ref(null)
+const deletePointNames = ref('')
+const deletePointCount = ref(0)
+
 const totalPoints = computed(() => {
   return locationStore.locationGroups.reduce((sum, g) => sum + g.points.length, 0)
 })
@@ -274,14 +295,31 @@ const handleAddPoints = () => {
 }
 
 const deleteSelectedInGroup = (groupId) => {
-  const selectedCount = locationStore.getSelectedPointsInGroup(groupId).length
-  if (selectedCount === 0) {
+  const group = locationStore.locationGroups.find(g => g.id === groupId)
+  if (!group) return
+  
+  const selectedPoints = locationStore.getSelectedPointsInGroup(groupId)
+  if (selectedPoints.length === 0) {
     alert('请先选择要删除的点')
     return
   }
-  if (confirm(`确定删除选中的 ${selectedCount} 个点吗？`)) {
-    locationStore.deleteSelectedPoints()
-  }
+  
+  deleteGroup.value = group
+  deletePointNames.value = selectedPoints.map(p => p.tagName).join(', ')
+  deletePointCount.value = selectedPoints.length
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = () => {
+  locationStore.deleteSelectedPoints()
+  closeDeleteDialog()
+}
+
+const closeDeleteDialog = () => {
+  showDeleteDialog.value = false
+  deleteGroup.value = null
+  deletePointNames.value = ''
+  deletePointCount.value = 0
 }
 
 const exportGroup = (groupId) => {
@@ -787,5 +825,71 @@ const handleClear = () => {
 
 .add-dialog .btn-submit:hover {
   background: #5c6bc0;
+}
+
+.delete-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.delete-dialog .dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.delete-dialog .dialog-header h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.delete-dialog .dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.delete-message {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+}
+
+.btn-cancel:hover {
+  background: #eee;
+}
+
+.btn-confirm {
+  padding: 8px 16px;
+  background: #f44336;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #fff;
+}
+
+.btn-confirm:hover {
+  background: #d32f2f;
 }
 </style>
