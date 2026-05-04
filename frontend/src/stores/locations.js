@@ -12,6 +12,13 @@ const formatDateTime = (timestamp) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
+const colorPalette = [
+  '#5c6bc0', '#ef5350', '#66bb6a', '#ffa726', '#ab47bc', 
+  '#26a69a', '#ec407a', '#7e57c2', '#42a5f5', '#ff7043',
+  '#8d6e63', '#78909c', '#26c6da', '#9ccc65', '#d4e157'
+]
+let colorIndex = 0
+
 export const useLocationStore = defineStore('locations', () => {
   const locationGroups = ref([])
   const visiblePoints = ref(new Set())
@@ -38,7 +45,10 @@ export const useLocationStore = defineStore('locations', () => {
           alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
           time: timestamp,
           datetime: formatDateTime(timestamp),
-          extra: extras[index]?.extra || {}
+          extra: extras[index]?.extra || {},
+          showDetail: true,
+          head: extras[index]?.head || 0,
+          speed: extras[index]?.speed || 0
         }
       })
       existingGroup.points.push(...newPoints)
@@ -57,7 +67,10 @@ export const useLocationStore = defineStore('locations', () => {
           alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
           time: timestamp,
           datetime: formatDateTime(timestamp),
-          extra: extras[index]?.extra || {}
+          extra: extras[index]?.extra || {},
+          showDetail: true,
+          head: extras[index]?.head || 0,
+          speed: extras[index]?.speed || 0
         }
       })
       
@@ -66,7 +79,9 @@ export const useLocationStore = defineStore('locations', () => {
         name,
         points,
         cooSys,
-        visible: true
+        visible: true,
+        color: colorPalette[colorIndex++ % colorPalette.length],
+        shape: 'circle'
       })
       points.forEach(p => visiblePoints.value.add(p.id))
     }
@@ -101,6 +116,17 @@ export const useLocationStore = defineStore('locations', () => {
   }
 
   const isPointSelected = (pointId) => selectedPoints.value.has(pointId)
+
+  const togglePointDetail = (pointId) => {
+    for (const group of locationGroups.value) {
+      const point = group.points.find(p => p.id === pointId)
+      if (point) {
+        point.showDetail = !point.showDetail
+        saveLocations()
+        break
+      }
+    }
+  }
 
   const toggleGroupSelectAll = (groupId) => {
     const group = locationGroups.value.find(g => g.id === groupId)
@@ -200,6 +226,36 @@ export const useLocationStore = defineStore('locations', () => {
     }
   }
 
+  const updateGroupColor = (groupId, newColor) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (group) {
+      group.color = newColor
+      saveLocations()
+    }
+  }
+
+  const updateGroupShape = (groupId, newShape) => {
+    const group = locationGroups.value.find(g => g.id === groupId)
+    if (group) {
+      group.shape = newShape
+      saveLocations()
+    }
+  }
+
+  const deleteGroup = (groupId) => {
+    const index = locationGroups.value.findIndex(g => g.id === groupId)
+    if (index !== -1) {
+      const group = locationGroups.value[index]
+      group.points.forEach(p => {
+        selectedPoints.value.delete(p.id)
+        visiblePoints.value.delete(p.id)
+      })
+      groupShowTrack.value.delete(groupId)
+      locationGroups.value.splice(index, 1)
+      saveLocations()
+    }
+  }
+
   const saveLocations = () => {
     localStorage.setItem('map-locations', JSON.stringify({
       groups: locationGroups.value,
@@ -235,6 +291,7 @@ export const useLocationStore = defineStore('locations', () => {
     isPointVisible,
     toggleSelectedPoint,
     isPointSelected,
+    togglePointDetail,
     toggleGroupSelectAll,
     isGroupAllSelected,
     toggleGroupShowTrack,
@@ -245,6 +302,9 @@ export const useLocationStore = defineStore('locations', () => {
     getSelectedPointsInGroup,
     clearAll,
     updateGroupName,
-    updatePointName
+    updatePointName,
+    updateGroupColor,
+    updateGroupShape,
+    deleteGroup
   }
 })

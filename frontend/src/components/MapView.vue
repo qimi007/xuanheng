@@ -60,6 +60,7 @@ const showTraffic = ref(false)
 
 let map = null
 let markers = []
+let trackPolylines = []
 let mapLoaded = false
 let trafficLayer = null
 let satelliteLayer = null
@@ -240,28 +241,89 @@ const updateLayers = () => {
   }
 }
 
+const adjustColorBrightness = (hex, percent) => {
+  const num = parseInt(hex.slice(1), 16)
+  const amt = Math.round(2.55 * percent)
+  const R = Math.max(0, Math.min(255, (num >> 16) + amt))
+  const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt))
+  const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt))
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)
+}
+
 const updateMarkers = () => {
   if (!map || !mapLoaded) return
 
   markers.forEach(m => m.setMap(null))
   markers = []
+  trackPolylines.forEach(p => p.setMap(null))
+  trackPolylines = []
 
   locationStore.locationGroups.forEach(group => {
-    if (!group.visible) return
+    const shape = group.shape || 'circle'
+    const fillColor = group.color || '#5c6bc0'
+    const strokeColor = adjustColorBrightness(fillColor, -30)
 
     group.points.forEach(point => {
-      if (!locationStore.isPointVisible(point.id)) return
+      if (!locationStore.isPointSelected(point.id)) return
 
-      const marker = new window.AMap.Marker({
-        position: [point.lng, point.lat],
-        title: point.name
-      })
-      marker.setMap(map)
-      markers.push(marker)
-    })
+      if (shape === 'arrow') {
+        const head = point.head || 0
+        const size = 16
+        const arrowSvg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="${size/2},1 ${size/2-4},9 ${size/2+4},9" fill="${fillColor}"/>
+          <line x1="${size/2}" y1="9" x2="${size/2}" y2="${size-2}" stroke="${fillColor}" stroke-width="2" stroke-linecap="round"/>
+        </svg>`
+        const marker = new window.AMap.Marker({
+          position: [point.lng, point.lat],
+          icon: new window.AMap.Icon({
+            size: new window.AMap.Size(size, size),
+            image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(arrowSvg),
+            imageSize: new window.AMap.Size(size, size),
+            imageOffset: new window.AMap.Pixel(0, 0)
+          }),
+          angle: head,
+          zIndex: 10
+        })
+        marker.setMap(map)
+        markers.push(marker)
+      } else {
+        const marker = new window.AMap.CircleMarker({
+          center: [point.lng, point.lat],
+          radius: 6,
+          fillColor: fillColor,
+          fillOpacity: 0.8,
+          strokeColor: strokeColor,
+          strokeWidth: 1,
+          zIndex: 10
+        })
+        marker.setMap(map)
+        markers.push(marker)
+      }
+})
+
+    if (locationStore.isGroupShowTrack(group.id)) {
+      const selectedPoints = locationStore.getSelectedPointsInGroup(group.id)
+      if (selectedPoints.length >= 2) {
+        const path = selectedPoints.map(p => new window.AMap.LngLat(p.lng, p.lat))
+        const polyline = new window.AMap.Polyline({
+          path: path,
+          strokeColor: fillColor,
+          strokeWeight: 6,
+          strokeOpacity: 0.8,
+          zIndex: 5,
+          isOutline: false,
+          borderWeight: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+          showDir: true
+        })
+        polyline.setMap(map)
+        trackPolylines.push(polyline)
+      }
+    }
   })
 
-  if (markers.length > 0) {
+  if (markers.length > 0 || trackPolylines.length > 0) {
     map.setFitView()
   }
 }
@@ -291,7 +353,7 @@ watch(() => settingsStore.mapKey, (newKey) => {
   }
 })
 
-watch(() => [locationStore.locationGroups, locationStore.visiblePoints], () => {
+watch(() => [locationStore.locationGroups, locationStore.visiblePoints, locationStore.selectedPoints, locationStore.groupShowTrack], () => {
   updateMarkers()
 }, { deep: true })
 

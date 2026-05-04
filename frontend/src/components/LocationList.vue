@@ -1,7 +1,7 @@
 <template>
   <div class="location-list">
     <div class="card-header">
-      <h3>位置列表</h3>
+      <h3>位置列表{{ locationStore.locationGroups.length > 0 ? `(${locationStore.locationGroups.length}个分组)` : '' }}</h3>
       <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
@@ -80,12 +80,85 @@
       </div>
     </div>
 
-    <div class="list-content">
-      <div class="list-header" v-if="locationStore.locationGroups.length > 0 && !searchKeyword">
-        <span class="count">{{ locationStore.locationGroups.length }} 个分组</span>
-        <button class="btn-clear" @click="handleClear">清空</button>
+    <div v-if="showDeleteGroupDialog" class="add-dialog-overlay" @click="closeDeleteGroupDialog">
+      <div class="delete-dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>删除分组提醒</h3>
+          <button class="close-btn" @click="closeDeleteGroupDialog">✕</button>
+        </div>
+        <div class="dialog-content">
+          <p class="delete-message">确定要删除分组"{{ deleteGroupName }}"吗?</p>
+          <div class="delete-actions">
+            <button class="btn-cancel" @click="closeDeleteGroupDialog">取消</button>
+            <button class="btn-confirm" @click="confirmDeleteGroup">确定</button>
+          </div>
+        </div>
       </div>
+    </div>
 
+    <div v-if="showContextMenuFlag" class="context-menu-overlay" @click="closeContextMenu">
+      <div class="context-menu" :style="{ left: contextMenuX + 'px', top: contextMenuY + 'px' }" @click.stop>
+        <div class="context-menu-item" @click="handleContextMenuAction('selectAll')">
+          <span class="menu-icon">✓</span>
+          <span>全选/取消</span>
+        </div>
+        <div class="context-menu-item color-menu-item" @click.stop="toggleColorPickerFromMenu">
+          <span class="menu-icon" :style="{ backgroundColor: contextMenuGroup?.color }"></span>
+          <span>选择颜色</span>
+          <span class="menu-arrow">▶</span>
+          <div v-if="activeColorPicker === contextMenuGroup?.id" class="menu-color-picker" @click.stop>
+            <div 
+              v-for="color in colorPalette" 
+              :key="color"
+              class="color-option"
+              :style="{ backgroundColor: color }"
+              @click="selectColorFromMenu(color)"
+            ></div>
+          </div>
+        </div>
+        <div class="context-menu-item" @click.stop="toggleShapeMenu">
+          <span class="menu-icon">●</span>
+          <span>标记形状</span>
+          <span class="menu-arrow">▶</span>
+          <div v-if="activeShapeMenu === contextMenuGroup?.id" class="menu-shape-picker" @click.stop>
+            <div class="shape-option" :class="{ active: contextMenuGroup?.shape === 'circle' }" @click="selectShape('circle')">
+              <span class="shape-circle"></span>
+              <span>圆形</span>
+            </div>
+            <div class="shape-option" :class="{ active: contextMenuGroup?.shape === 'arrow' }" @click="selectShape('arrow')">
+              <span class="shape-arrow">➤</span>
+              <span>箭头</span>
+            </div>
+          </div>
+        </div>
+        <div class="context-menu-item" @click="handleContextMenuAction('track')" :class="{ disabled: !canShowTrack && !isTrackShown }">
+          <span class="menu-icon">〰</span>
+          <span>{{ isTrackShown ? '隐藏轨迹' : '显示轨迹' }}</span>
+        </div>
+        <div class="context-menu-item" @click="handleContextMenuAction('add')">
+          <span class="menu-icon">+</span>
+          <span>添加点</span>
+        </div>
+        <div class="context-menu-item" @click="handleContextMenuAction('delete')" :class="{ disabled: !canDelete }">
+          <span class="menu-icon">🗑</span>
+          <span>删除选中</span>
+        </div>
+        <div class="context-menu-item" @click="handleContextMenuAction('export')" :class="{ disabled: !canExport }">
+          <span class="menu-icon">↓</span>
+          <span>导出</span>
+        </div>
+        <div class="context-menu-item" @click="handleContextMenuAction('editName')">
+          <span class="menu-icon">✎</span>
+          <span>重命名</span>
+        </div>
+        <div class="context-menu-item" @click="handleContextMenuAction('deleteGroup')">
+          <span class="menu-icon">✕</span>
+          <span>删除分组</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-content">
       <div v-if="totalPoints === 0" class="empty">
         <p>暂无位置数据</p>
         <p class="empty-hint">请先添加位置</p>
@@ -93,7 +166,7 @@
 
       <div v-else class="groups">
         <div v-for="group in filteredGroups" :key="group.id" class="group">
-          <div class="group-row">
+          <div class="group-row" @contextmenu.prevent="showContextMenu($event, group)">
             <span class="expand-icon" @click.stop="locationStore.toggleGroup(group.id)">{{ group.visible ? '▼' : '▶' }}</span>
             <input
               v-if="editingGroupId === group.id"
@@ -109,38 +182,12 @@
               class="group-name"
               @dblclick.stop="startEditGroup(group)"
             >{{ group.name }}</span>
-            <span class="group-count">{{ group.filteredPoints.length }}点</span>
-            <div class="group-actions">
-              <button class="action-btn" @click.stop="toggleGroupSelectAll(group.id)" title="全选">
-                <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupAllSelected(group.id) }">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-              </button>
-              <button 
-                class="action-btn" 
-                @click.stop="toggleShowTrack(group.id)" 
-                title="显示轨迹"
-                :disabled="locationStore.getSelectedPointsInGroup(group.id).length === 0"
-              >
-                <svg viewBox="0 0 24 24" class="action-icon" :class="{ active: locationStore.isGroupShowTrack(group.id), disabled: locationStore.getSelectedPointsInGroup(group.id).length === 0 }">
-                  <path d="M4 20c0-4 4-10 10-10c2 0 4-2 4-2s2 2 4 2c6 0 10 6 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </button>
-              <button class="action-btn" @click.stop="openAddDialog(group.id)" title="添加">
-                <svg viewBox="0 0 24 24" class="action-icon">
-                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                </svg>
-              </button>
-              <button class="action-btn" @click.stop="deleteSelectedInGroup(group.id)" title="删除选中">
-                <svg viewBox="0 0 24 24" class="action-icon">
-                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                </svg>
-              </button>
-              <button class="action-btn" @click.stop="exportGroup(group.id)" title="导出">
-                <svg viewBox="0 0 24 24" class="action-icon">
-                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                </svg>
-              </button>
+            <span class="group-count">{{ group.filteredPoints.length }}</span>
+            <div class="group-indicator">
+              <svg v-if="group.shape === 'arrow'" class="indicator-icon" width="16" height="16" viewBox="0 0 16 16">
+                <polygon points="8,1 12,9 10,9 10,14 6,14 6,9 4,9" :fill="group.color"/>
+              </svg>
+              <span v-else class="indicator-circle-filled" :style="{ backgroundColor: group.color }"></span>
             </div>
           </div>
 
@@ -169,6 +216,14 @@
                     class="point-name"
                     @dblclick.stop="startEditPoint(point)"
                   >{{ point.tagName }}</span>
+                  <input
+                    type="radio"
+                    class="point-detail-radio"
+                    :name="'detail-' + point.id"
+                    :checked="point.showDetail"
+                    :disabled="!locationStore.isPointSelected(point.id)"
+                    @change="locationStore.togglePointDetail(point.id)"
+                  />
                 </div>
                 <div class="point-coord-row">
                   <span class="point-coordsys">[{{ point.cooSys }}]</span>
@@ -193,6 +248,125 @@ defineEmits(['close'])
 
 const locationStore = useLocationStore()
 
+const colorPalette = [
+  '#5c6bc0', '#ef5350', '#66bb6a', '#ffa726', '#ab47bc', 
+  '#26a69a', '#ec407a', '#7e57c2', '#42a5f5', '#ff7043',
+  '#8d6e63', '#78909c', '#26c6da', '#9ccc65', '#d4e157'
+]
+
+const activeColorPicker = ref(null)
+const activeShapeMenu = ref(null)
+
+const toggleColorPicker = (groupId) => {
+  activeColorPicker.value = activeColorPicker.value === groupId ? null : groupId
+}
+
+const selectColor = (groupId, color) => {
+  locationStore.updateGroupColor(groupId, color)
+  activeColorPicker.value = null
+}
+
+const showContextMenuFlag = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuGroup = ref(null)
+
+const showContextMenu = (event, group) => {
+  contextMenuGroup.value = group
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  showContextMenuFlag.value = true
+}
+
+const closeContextMenu = () => {
+  showContextMenuFlag.value = false
+  contextMenuGroup.value = null
+  activeColorPicker.value = null
+  activeShapeMenu.value = null
+}
+
+const canShowTrack = computed(() => {
+  if (!contextMenuGroup.value) return false
+  return locationStore.getSelectedPointsInGroup(contextMenuGroup.value.id).length >= 2
+})
+
+const isTrackShown = computed(() => {
+  if (!contextMenuGroup.value) return false
+  return locationStore.isGroupShowTrack(contextMenuGroup.value.id)
+})
+
+const canDelete = computed(() => {
+  if (!contextMenuGroup.value) return false
+  return locationStore.getSelectedPointsInGroup(contextMenuGroup.value.id).length > 0
+})
+
+const canExport = computed(() => {
+  if (!contextMenuGroup.value) return false
+  return locationStore.getSelectedPointsInGroup(contextMenuGroup.value.id).length > 0
+})
+
+const handleContextMenuAction = (action) => {
+  if (!contextMenuGroup.value) return
+  const groupId = contextMenuGroup.value.id
+  
+  switch (action) {
+    case 'selectAll':
+      locationStore.toggleGroupSelectAll(groupId)
+      break
+    case 'track':
+      if (canShowTrack.value) {
+        locationStore.toggleGroupShowTrack(groupId)
+      }
+      break
+    case 'add':
+      openAddDialog(groupId)
+      break
+    case 'delete':
+      if (canDelete.value) {
+        deleteSelectedInGroup(groupId)
+      }
+      break
+    case 'export':
+      if (canExport.value) {
+        exportGroup(groupId)
+      }
+      break
+    case 'editName':
+      startEditGroup(contextMenuGroup.value)
+      break
+    case 'deleteGroup':
+      openDeleteGroupDialog(contextMenuGroup.value.name)
+      break
+  }
+closeContextMenu()
+}
+
+const toggleColorPickerFromMenu = () => {
+  if (contextMenuGroup.value) {
+    activeColorPicker.value = activeColorPicker.value === contextMenuGroup.value.id ? null : contextMenuGroup.value.id
+  }
+}
+
+const selectColorFromMenu = (color) => {
+  if (contextMenuGroup.value) {
+    locationStore.updateGroupColor(contextMenuGroup.value.id, color)
+    activeColorPicker.value = null
+  }
+}
+
+const toggleShapeMenu = () => {
+  if (contextMenuGroup.value) {
+    activeShapeMenu.value = activeShapeMenu.value === contextMenuGroup.value.id ? null : contextMenuGroup.value.id
+  }
+}
+
+const selectShape = (shape) => {
+  if (contextMenuGroup.value) {
+    locationStore.updateGroupShape(contextMenuGroup.value.id, shape)
+    activeShapeMenu.value = null
+  }
+}
+
 const editingGroupId = ref(null)
 const editingGroupName = ref('')
 const groupNameInput = ref(null)
@@ -216,6 +390,9 @@ const showDeleteDialog = ref(false)
 const deleteGroup = ref(null)
 const deletePointNames = ref('')
 const deletePointCount = ref(0)
+
+const showDeleteGroupDialog = ref(false)
+const deleteGroupName = ref('')
 
 const totalPoints = computed(() => {
   return locationStore.locationGroups.reduce((sum, g) => sum + g.points.length, 0)
@@ -348,7 +525,8 @@ const deleteSelectedInGroup = (groupId) => {
   }
   
   deleteGroup.value = group
-  deletePointNames.value = selectedPoints.map(p => p.tagName).join(', ')
+  const firstName = selectedPoints[0]?.tagName || ''
+  deletePointNames.value = selectedPoints.length > 1 ? `${firstName}...` : firstName
   deletePointCount.value = selectedPoints.length
   showDeleteDialog.value = true
 }
@@ -363,6 +541,23 @@ const closeDeleteDialog = () => {
   deleteGroup.value = null
   deletePointNames.value = ''
   deletePointCount.value = 0
+}
+
+const openDeleteGroupDialog = (groupName) => {
+  deleteGroupName.value = groupName
+  showDeleteGroupDialog.value = true
+}
+
+const confirmDeleteGroup = () => {
+  if (contextMenuGroup.value) {
+    locationStore.deleteGroup(contextMenuGroup.value.id)
+  }
+  closeDeleteGroupDialog()
+}
+
+const closeDeleteGroupDialog = () => {
+  showDeleteGroupDialog.value = false
+  deleteGroupName.value = ''
 }
 
 const exportGroup = (groupId) => {
@@ -572,8 +767,8 @@ const handleClear = () => {
 .group-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
+  gap: 6px;
+  padding: 9px 10px;
   background: linear-gradient(135deg, #f8f8fc 0%, #f0f0f8 100%);
   cursor: pointer;
   transition: all 0.2s;
@@ -581,6 +776,25 @@ const handleClear = () => {
 
 .group-row:hover {
   background: linear-gradient(135deg, #f0f0f8 0%, #e8e8f5 100%);
+}
+
+.group-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding-right: 4px;
+}
+
+.indicator-icon {
+  display: block;
+}
+
+.indicator-circle-filled {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
 .group-actions {
@@ -603,6 +817,11 @@ const handleClear = () => {
   transition: all 0.2s;
 }
 
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .action-btn:hover {
   background: rgba(92, 107, 192, 0.25);
 }
@@ -615,6 +834,51 @@ const handleClear = () => {
 
 .action-icon.active {
   fill: #3949ab;
+}
+
+.color-picker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.color-picker-btn {
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-picker-dropdown {
+  position: absolute;
+  top: 20px;
+  left: -60px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.color-option {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.color-option:hover {
+  transform: scale(1.1);
 }
 
 .action-btn:disabled {
@@ -660,7 +924,7 @@ const handleClear = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 4px 9px;
   border-bottom: 1px solid #f8f8f8;
 }
 
@@ -675,6 +939,16 @@ const handleClear = () => {
 
 .point-checkbox input {
   cursor: pointer;
+}
+
+.point-detail-radio {
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.point-detail-radio:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .point-info {
@@ -979,5 +1253,142 @@ const handleClear = () => {
 
 .btn-confirm:hover {
   background: #d32f2f;
+}
+
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+.context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 4px 0;
+  min-width: 140px;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+}
+
+.context-menu-item:hover {
+  background: #f0f4ff;
+}
+
+.context-menu-item.disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+.context-menu-item.disabled:hover {
+  background: transparent;
+}
+
+.menu-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.menu-icon[style*="background"] {
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.color-menu-item {
+  position: relative;
+}
+
+.menu-arrow {
+  margin-left: auto;
+  font-size: 10px;
+  color: #999;
+}
+
+.menu-color-picker {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+
+.menu-color-picker .color-option {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.menu-color-picker .color-option:hover {
+  transform: scale(1.1);
+}
+
+.menu-shape-picker {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  min-width: 90px;
+}
+
+.shape-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.shape-option:hover {
+  background: #f0f4ff;
+}
+
+.shape-option.active {
+  background: #e8eaf6;
+}
+
+.shape-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #5c6bc0;
+}
+
+.shape-arrow {
+  color: #5c6bc0;
+  font-size: 12px;
 }
 </style>
