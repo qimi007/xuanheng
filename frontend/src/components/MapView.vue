@@ -133,6 +133,8 @@ const initMap = async () => {
       })
     })
 
+    locationStore.setAmapInstance(window.AMap)
+
     const placeholder = mapContainer.value.querySelector('.map-placeholder')
     if (placeholder) placeholder.remove()
 
@@ -430,10 +432,12 @@ const createInfoWindow = (point) => {
 const updateInfoWindowPositions = () => {
   if (!map || !mapLoaded) return
   locationStore.locationGroups.forEach(group => {
+    const cooSys = group.cooSys || 'W'
     group.points.forEach(point => {
       const info = infoWindowsRef.value.find(w => w.pointId === point.id)
       if (info && !info.isDragging) {
-        const pixel = map.lngLatToContainer([point.lng, point.lat])
+        const coord = convertCoord(point.lng, point.lat, cooSys)
+        const pixel = map.lngLatToContainer([coord.lng, coord.lat])
         info.x = pixel.x
         info.y = pixel.y
       }
@@ -442,8 +446,11 @@ const updateInfoWindowPositions = () => {
   infoWindowsRef.value.forEach(info => {
     const point = getPointById(info.pointId)
     if (point) {
+      const group = locationStore.locationGroups.find(g => g.points.some(p => p.id === info.pointId))
+      const cooSys = point.cooSys || (group ? group.cooSys : 'W') || 'W'
+      const coord = convertCoord(point.lng, point.lat, cooSys)
       const mapCenter = map.getCenter()
-      const dy = mapCenter.getLat() - point.lat
+      const dy = mapCenter.getLat() - coord.lat
       if (dy > 0.01) {
         info.anchor = 'bottom'
       } else if (dy < -0.01) {
@@ -457,14 +464,18 @@ const updateInfoWindowPositions = () => {
 
 const focusPoint = (point) => {
   if (!map || !mapLoaded) return
-  
-  map.setCenter([point.lng, point.lat])
-  
+
+  const group = locationStore.locationGroups.find(g => g.points.some(p => p.id === point.id))
+  const cooSys = point.cooSys || (group ? group.cooSys : 'W') || 'W'
+  const coord = convertCoord(point.lng, point.lat, cooSys)
+
+  map.setCenter([coord.lng, coord.lat])
+
   const targetMarker = markers.find(m => {
     const ext = m.getExtData()
     return ext === point.id || (ext && ext.pointId === point.id)
   })
-  
+
   if (targetMarker) {
     animateScale(targetMarker)
   }
@@ -489,6 +500,7 @@ const updateMarkers = () => {
       if (shape === 'arrow') {
         const head = point.head || 0
         const size = 16
+        const mapCoord = locationStore.getMapCoord(point)
         const createArrowIcon = (newSize) => {
           const arrowSvg = `<svg width="${newSize}" height="${newSize}" viewBox="0 0 ${newSize} ${newSize}" xmlns="http://www.w3.org/2000/svg">
             <polygon points="${newSize/2},1 ${newSize/2-4},9 ${newSize/2+4},9" fill="${fillColor}"/>
@@ -501,7 +513,7 @@ const updateMarkers = () => {
           })
         }
         const marker = new window.AMap.Marker({
-          position: [point.lng, point.lat],
+          position: [mapCoord.lng, mapCoord.lat],
           icon: createArrowIcon(size),
           anchor: 'center',
           angle: head,
@@ -525,6 +537,7 @@ const updateMarkers = () => {
         markers.push(marker)
       } else {
         const size = 12
+        const mapCoord = locationStore.getMapCoord(point)
         const createCircleIcon = (newSize) => {
           const circleSvg = `<svg width="${newSize}" height="${newSize}" viewBox="0 0 ${newSize} ${newSize}" xmlns="http://www.w3.org/2000/svg">
             <circle cx="${newSize/2}" cy="${newSize/2}" r="${newSize/2 - 1}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1"/>
@@ -536,7 +549,7 @@ const updateMarkers = () => {
           })
         }
         const marker = new window.AMap.Marker({
-          position: [point.lng, point.lat],
+          position: [mapCoord.lng, mapCoord.lat],
           icon: createCircleIcon(size),
           anchor: 'center',
           zIndex: 10,
@@ -563,7 +576,10 @@ const updateMarkers = () => {
     if (locationStore.isGroupShowTrack(group.id)) {
       const selectedPoints = locationStore.getSelectedPointsInGroup(group.id)
       if (selectedPoints.length >= 2) {
-        const path = selectedPoints.map(p => new window.AMap.LngLat(p.lng, p.lat))
+        const path = selectedPoints.map(p => {
+          const mapCoord = locationStore.getMapCoord(p)
+          return new window.AMap.LngLat(mapCoord.lng, mapCoord.lat)
+        })
         const polyline = new window.AMap.Polyline({
           path: path,
           strokeColor: fillColor,

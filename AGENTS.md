@@ -20,6 +20,7 @@
 │   ├── src/
 │   │   ├── components/         # Vue组件
 │   │   │   ├── AddLocation.vue # 添加位置对话框
+│   │   │   ├── ErrorDialog.vue  # 坐标转换错误弹框
 │   │   │   ├── LocationList.vue# 位置列表悬浮卡片
 │   │   │   ├── MapView.vue     # 地图组件
 │   │   │   └── Settings.vue    # 设置对话框
@@ -100,22 +101,24 @@ python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗
      - 单选框在位置点未选中时置灰不可点击
    - **轨迹按钮**：选中少于2个点时置灰不可点击
    - **样式**：分组标题边距 9px 10px，位置点边距 4px 9px
-   - **位置点数据结构**：
-     ```js
-     {
-       id: 'xxx',
-       tagName: '点1',    // 名称
-       cooSys: 'W',      // W=WGS84, G=GCJ-02
-       lng: 116.397428,  // 经度
-       lat: 39.90923,    // 纬度
-       alt: 0,           // 海拔（默认0）
-       time: 1715000000000, // 时间戳
-       extra: {},        // 扩展信息（从POS/日志文件获取）
-       showDetail: true, // 是否显示详细信息
-       head: 0,          // 航向角度（用于箭头标记）
-       speed: 0          // 速度
-     }
-     ```
+    - **位置点数据结构**：
+      ```js
+      {
+        id: 'xxx',
+        tagName: '点1',    // 名称
+        cooSys: 'W',      // W=WGS84, G=GCJ-02
+        lng: 116.397428,  // 原始经度
+        lat: 39.90923,    // 原始纬度
+        gcjLng: 116.40,   // GCJ-02经度（WGS84自动转换后写入，GCJ-02原始即为undefined）
+        gcjLat: 39.91,    // GCJ-02纬度
+        alt: 0,           // 海拔（默认0）
+        time: 1715000000000, // 时间戳
+        extra: {},        // 扩展信息（从POS/日志文件获取）
+        showDetail: true, // 是否显示详细信息
+        head: 0,          // 航向角度（用于箭头标记）
+        speed: 0          // 速度
+      }
+      ```
    - **分组数据结构**：
      ```js
      {
@@ -224,6 +227,39 @@ JS API 2.0 中使用 TileLayer 子类管理图层，**不使用**以下写法：
 | `AMap.TrafficLayer is not a constructor` | 类名不存在 | 使用 `AMap.TileLayer.Traffic()` |
 | `setMapType is not a function` | 旧版 API 方法 | 改用 TileLayer + add/remove |
 | `mapStyle` 不生效 | 构造函数中设置无效 | 在 `complete` 事件中调用 `setMapStyle()` |
+| `USERKEY_PLAT_NOMATCH` | JS API Key 不能用于 REST API | `convertFrom` 需通过 JS SDK 调用或使用本地算法 |
+
+## 坐标系转换
+
+### WGS84 → GCJ-02 本地算法
+
+高德 JS API 的 `AMap.convertFrom` 需要安全密钥（`window._AMapSecurityConfig`）且依赖网络。项目改用本地数学算法（火星坐标系），无需 API 调用，即时转换。
+
+**算法来源**：GCJ-02 官方数学变换公式，与高德内部使用相同参数（`A=6378245.0`, `EE=0.00669342162296594323`）。
+
+**关键常量**：
+```
+PI = Math.PI
+A = 6378245.0           // 椭球长半轴
+EE = 0.00669342162296594323  // 椭球偏心率平方
+```
+
+**转换流程**：
+1. 添加 WGS84 点时，调用 `wgs84ToGcj02()` 计算 GCJ-02 坐标
+2. 成功 → 写入 `point.gcjLng` / `point.gcjLat`，自动勾选显示标记
+3. 失败(超出中国范围) → 使用原始坐标，仍可显示
+
+**状态管理**（`stores/locations.js`）：
+- `selectedPoints`：控制复选框和地图标记显示
+- `visiblePoints`：控制转换失败点的可见性
+- `getMapCoord(point)`：返回 `{ lng: point.gcjLng ?? point.lng, lat: point.gcjLat ?? point.lat }`
+- `findPointById()`：**必须在 store 内部定义**，否则无法访问 `locationGroups`
+
+### 关键约束
+
+- **`findPointById` 必须定义在 `defineStore` 回调内部**：该函数引用 `locationGroups.value`，若定义在模块顶层将抛出 `ReferenceError`
+- **`transformCoord` 回调为同步执行**（本地算法），注意时序：确保 `locationGroups.value` 已包含目标点后再调用，否则 `findPointById` 返回 `null`
+- **复选框用 `@change`**：同步转换确保 `selectedPoints` 在事件处理中立即更新，Vue 可正确渲染复选框状态（不能用 `@click.prevent`）
 
 ## 环境配置
 

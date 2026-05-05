@@ -34,6 +34,9 @@
         <Settings v-else-if="activeFeature === 'settings'" @close="closeDialog" />
       </div>
     </div>
+
+    <!-- 坐标转换错误弹框 -->
+    <ErrorDialog v-if="locationStore.coordErrors.length > 0" />
   </div>
 </template>
 
@@ -43,12 +46,15 @@ import MapView from './components/MapView.vue'
 import AddLocation from './components/AddLocation.vue'
 import LocationList from './components/LocationList.vue'
 import Settings from './components/Settings.vue'
+import ErrorDialog from './components/ErrorDialog.vue'
 import { useSettingsStore } from './stores/settings'
+import { useLocationStore } from './stores/locations'
 
 const activeFeature = ref(null)
 const showDialog = ref(false)
 const showListCard = ref(false)
 const settingsStore = useSettingsStore()
+const locationStore = useLocationStore()
 
 const toggleFeature = (feature) => {
   if (feature === 'list') {
