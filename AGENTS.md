@@ -66,6 +66,17 @@ python src/backend/app.py  # 启动Flask服务 (端口5000)
 python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗口
 ```
 
+### 打包为EXE
+```bash
+# 1. 确保前端已构建
+cd frontend && npm run build && cd ..
+
+# 2. 使用 PyInstaller 打包（单文件，无控制台）
+uv run pyinstaller xuanheng.spec --clean --noconfirm
+
+# 输出：dist/xuanheng.exe（约14MB）
+```
+
 ## UI布局说明
 
 ### 整体布局

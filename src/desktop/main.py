@@ -6,12 +6,20 @@ import os
 import subprocess
 import urllib.request
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+IS_FROZEN = getattr(sys, 'frozen', False)
+
+if IS_FROZEN:
+    PROJECT_DIR = sys._MEIPASS
+else:
+    PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 FRONTEND_DIR = os.path.join(PROJECT_DIR, 'frontend')
 DIST_DIR = os.path.join(FRONTEND_DIR, 'dist')
 VERSION = 'v1.0.0'
 
 def build_frontend():
+    if IS_FROZEN:
+        return
     if not os.path.exists(DIST_DIR):
         print("前端未构建，正在构建...")
         subprocess.run('npm run build', cwd=FRONTEND_DIR, shell=True, check=True)
@@ -19,8 +27,11 @@ def build_frontend():
         print("前端已构建")
 
 def run_server():
-    sys.path.insert(0, os.path.join(PROJECT_DIR, 'src', 'backend'))
-    from app import app
+    if IS_FROZEN:
+        from app import app
+    else:
+        sys.path.insert(0, os.path.join(PROJECT_DIR, 'src', 'backend'))
+        from app import app
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
 def get_window_title():

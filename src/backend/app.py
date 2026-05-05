@@ -1,12 +1,16 @@
 import os
+import sys
 import json
 import time
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from waitress import serve
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DIST_DIR = os.path.join(PROJECT_DIR, 'frontend', 'dist')
+if getattr(sys, 'frozen', False):
+    DIST_DIR = os.path.join(sys._MEIPASS, 'frontend', 'dist')
+else:
+    PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    DIST_DIR = os.path.join(PROJECT_DIR, 'frontend', 'dist')
 
 CONFIG_DIR = 'D:/Magic'
 CONFIG_FILE = os.path.join(CONFIG_DIR, 'settings.json')
