@@ -197,7 +197,7 @@
               :key="point.id" 
               class="point-item"
               :id="'point-' + point.id"
-              :class="{ 'point-focused': locationStore.focusedPointId === point.id }"
+              :class="{ 'point-focused': locationStore.focusedPointId === point.id, 'point-highlight': locationStore.highlightedPointId === point.id }"
               @dblclick="locationStore.setFocusedPoint(point.id)"
             >
               <div class="point-checkbox">
@@ -261,11 +261,22 @@ watch(() => locationStore.focusedPointId, (newPointId) => {
       const el = document.getElementById('point-' + newPointId)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        setTimeout(() => {
-          locationStore.clearFocusedPoint()
-        }, 500)
       }
     })
+  }
+})
+
+watch(() => locationStore.highlightedPointId, (newPointId) => {
+  if (newPointId) {
+    nextTick(() => {
+      const el = document.getElementById('point-' + newPointId)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    })
+    setTimeout(() => {
+      locationStore.clearHighlightPoint()
+    }, 1500)
   }
 })
 
@@ -956,6 +967,11 @@ const handleClear = () => {
 .point-focused {
   background: linear-gradient(90deg, rgba(92, 107, 192, 0.2) 0%, rgba(92, 107, 192, 0.05) 100%);
   border-left: 3px solid #5c6bc0;
+}
+
+.point-highlight {
+  background: linear-gradient(90deg, rgba(92, 107, 192, 0.15) 0%, rgba(92, 107, 192, 0.05) 100%);
+  border-left: 3px solid #7986cb;
 }
 
 .point-checkbox {

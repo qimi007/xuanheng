@@ -25,6 +25,7 @@ export const useLocationStore = defineStore('locations', () => {
   const selectedPoints = ref(new Set())
   const groupShowTrack = ref(new Set())
   const focusedPointId = ref(null)
+  const highlightedPointId = ref(null)
 
   const addGroup = (name, coords, coordType, extras = []) => {
     const cooSys = coordType === 'wgs84' ? 'W' : 'G'
@@ -53,7 +54,10 @@ export const useLocationStore = defineStore('locations', () => {
         }
       })
       existingGroup.points.push(...newPoints)
-      newPoints.forEach(p => visiblePoints.value.add(p.id))
+      newPoints.forEach(p => {
+        visiblePoints.value.add(p.id)
+        selectedPoints.value.add(p.id)
+      })
     } else {
       // 创建新分组
       const id = Date.now().toString()
@@ -84,7 +88,10 @@ export const useLocationStore = defineStore('locations', () => {
         color: colorPalette[colorIndex++ % colorPalette.length],
         shape: 'circle'
       })
-      points.forEach(p => visiblePoints.value.add(p.id))
+      points.forEach(p => {
+        visiblePoints.value.add(p.id)
+        selectedPoints.value.add(p.id)
+      })
     }
     saveLocations()
   }
@@ -124,6 +131,14 @@ export const useLocationStore = defineStore('locations', () => {
 
   const clearFocusedPoint = () => {
     focusedPointId.value = null
+  }
+
+  const setHighlightPoint = (pointId) => {
+    highlightedPointId.value = pointId
+  }
+
+  const clearHighlightPoint = () => {
+    highlightedPointId.value = null
   }
 
   const togglePointDetail = (pointId) => {
@@ -295,6 +310,7 @@ export const useLocationStore = defineStore('locations', () => {
     selectedPoints,
     groupShowTrack,
     focusedPointId,
+    highlightedPointId,
     addGroup, 
     toggleGroup, 
     togglePoint, 
@@ -303,6 +319,8 @@ export const useLocationStore = defineStore('locations', () => {
     isPointSelected,
     setFocusedPoint,
     clearFocusedPoint,
+    setHighlightPoint,
+    clearHighlightPoint,
     togglePointDetail,
     toggleGroupSelectAll,
     isGroupAllSelected,

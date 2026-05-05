@@ -332,34 +332,38 @@ const stopDrag = () => {
 }
 
 const animateScale = (markerInstance) => {
-  let scale = 1
+  const extData = markerInstance.getExtData()
+  if (!extData || !extData.createIcon || !extData.baseSize) return
+  
+  const { createIcon, baseSize } = extData
   const duration = 300
-  const maxScale = 2.0
+  const maxSize = baseSize * 2
   const startTime = Date.now()
   
   const animate = () => {
     const elapsed = Date.now() - startTime
     const progress = Math.min(elapsed / duration, 1)
+    let scale
     if (progress < 0.5) {
-      scale = 1 + progress * (maxScale - 1) * 2
+      scale = 1 + progress * (maxSize / baseSize - 1) * 2
     } else {
-      scale = maxScale - (progress - 0.5) * (maxScale - 1) * 2
+      scale = maxSize / baseSize - (progress - 0.5) * (maxSize / baseSize - 1) * 2
     }
     
-    const currentZIndex = 10 + Math.floor((scale - 1) * 100)
-    markerInstance.setzIndex(currentZIndex)
+    const newSize = Math.round(baseSize * scale)
+    markerInstance.setIcon(createIcon(newSize))
     
     if (progress < 1) {
       requestAnimationFrame(animate)
     } else {
-      markerInstance.setzIndex(10)
+      markerInstance.setIcon(createIcon(baseSize))
     }
   }
   animate()
 }
 
 const handleMarkerClick = (pointId, markerInstance) => {
-  locationStore.setFocusedPoint(pointId)
+  locationStore.setHighlightPoint(pointId)
   animateScale(markerInstance)
 }
 
@@ -438,23 +442,31 @@ const updateMarkers = () => {
       if (shape === 'arrow') {
         const head = point.head || 0
         const size = 16
-        const arrowSvg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="${size/2},1 ${size/2-4},9 ${size/2+4},9" fill="${fillColor}"/>
-          <line x1="${size/2}" y1="9" x2="${size/2}" y2="${size-2}" stroke="${fillColor}" stroke-width="2" stroke-linecap="round"/>
-        </svg>`
+        const createArrowIcon = (newSize) => {
+          const arrowSvg = `<svg width="${newSize}" height="${newSize}" viewBox="0 0 ${newSize} ${newSize}" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="${newSize/2},1 ${newSize/2-4},9 ${newSize/2+4},9" fill="${fillColor}"/>
+            <line x1="${newSize/2}" y1="9" x2="${newSize/2}" y2="${newSize-2}" stroke="${fillColor}" stroke-width="2" stroke-linecap="round"/>
+          </svg>`
+          return new window.AMap.Icon({
+            size: new window.AMap.Size(newSize, newSize),
+            image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(arrowSvg),
+            imageSize: new window.AMap.Size(newSize, newSize)
+          })
+        }
         const marker = new window.AMap.Marker({
           position: [point.lng, point.lat],
-          icon: new window.AMap.Icon({
-            size: new window.AMap.Size(size, size),
-            image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(arrowSvg),
-            imageSize: new window.AMap.Size(size, size),
-            imageOffset: new window.AMap.Pixel(0, 0)
-          }),
+          icon: createArrowIcon(size),
+          anchor: 'center',
           angle: head,
           zIndex: 10,
-          extData: point.id
+          zIndexOffset: 100,
+          clickable: true,
+          cursor: 'pointer',
+          extData: { pointId: point.id, createIcon: createArrowIcon, baseSize: size }
         })
-        marker.on('click', () => handleMarkerClick(point.id, marker))
+        marker.on('click', () => {
+          handleMarkerClick(point.id, marker)
+        })
         marker.on('rightclick', (evt) => {
           markerRightClickHandled = true
           createInfoWindow(point, evt)
@@ -463,17 +475,30 @@ const updateMarkers = () => {
         marker.setMap(map)
         markers.push(marker)
       } else {
-        const marker = new window.AMap.CircleMarker({
-          center: [point.lng, point.lat],
-          radius: 6,
-          fillColor: fillColor,
-          fillOpacity: 0.8,
-          strokeColor: strokeColor,
-          strokeWidth: 1,
+        const size = 12
+        const createCircleIcon = (newSize) => {
+          const circleSvg = `<svg width="${newSize}" height="${newSize}" viewBox="0 0 ${newSize} ${newSize}" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="${newSize/2}" cy="${newSize/2}" r="${newSize/2 - 1}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1"/>
+          </svg>`
+          return new window.AMap.Icon({
+            size: new window.AMap.Size(newSize, newSize),
+            image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(circleSvg),
+            imageSize: new window.AMap.Size(newSize, newSize)
+          })
+        }
+        const marker = new window.AMap.Marker({
+          position: [point.lng, point.lat],
+          icon: createCircleIcon(size),
+          anchor: 'center',
           zIndex: 10,
-          extData: { radius: 6 }
+          zIndexOffset: 100,
+          clickable: true,
+          cursor: 'pointer',
+          extData: { pointId: point.id, createIcon: createCircleIcon, baseSize: size }
         })
-        marker.on('click', () => handleMarkerClick(point.id, marker))
+        marker.on('click', () => {
+          handleMarkerClick(point.id, marker)
+        })
         marker.on('rightclick', (evt) => {
           markerRightClickHandled = true
           createInfoWindow(point, evt)
@@ -551,8 +576,18 @@ watch(() => locationStore.focusedPointId, (pointId) => {
     }
   }
   if (targetPoint) {
-    focusPoint(targetPoint)
+    map.setCenter([targetPoint.lng, targetPoint.lat])
+    const targetMarker = markers.find(m => {
+      const ext = m.getExtData()
+      return ext === targetPoint.id || (ext && ext.pointId === targetPoint.id)
+    })
+    if (targetMarker) {
+      animateScale(targetMarker)
+    }
   }
+  setTimeout(() => {
+    locationStore.clearFocusedPoint()
+  }, 500)
 })
 
 defineExpose({ updateMarkers, focusPoint })
