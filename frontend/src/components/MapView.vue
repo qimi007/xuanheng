@@ -1,10 +1,34 @@
 <template>
   <div ref="mapContainer" class="map-container" v-if="settingsStore.getActiveKey()" @contextmenu.prevent="handleContextMenu">
     <div class="map-placeholder">正在加载地图...</div>
-    
+
+    <!-- 信息窗体 -->
+    <div
+      v-for="info in infoWindowsRef"
+      :key="info.pointId"
+      class="info-window"
+      :class="'anchor-' + (info.anchor || 'top')"
+      :style="{ left: info.x + 'px', top: (info.y - 30) + 'px' }"
+    >
+      <div class="info-window-content" @mousedown="startDrag($event, info)">
+        <button class="info-close-btn" @click.stop="closeInfoWindow(info.pointId)">✕</button>
+        <div class="info-title">{{ info.tagName }}</div>
+        <div class="info-body">
+          <div>时间: {{ info.time }}</div>
+          <div>经度: {{ info.lng }}</div>
+          <div>纬度: {{ info.lat }}</div>
+          <div>海拔: {{ info.alt }} m</div>
+          <div>航向角: {{ info.head }}°</div>
+          <div>速度: {{ info.speed }} m/s</div>
+          <div v-if="info.extra" v-html="info.extra" class="info-extra"></div>
+        </div>
+      </div>
+      <div class="info-connector"></div>
+    </div>
+
     <!-- 自定义右键菜单 -->
-    <div 
-      v-if="showContextMenu" 
+    <div
+      v-if="showContextMenu"
       ref="contextMenuRef"
       class="context-menu"
       :style="{ left: menuPosition.x + 'px', top: menuPosition.y + 'px' }"
@@ -40,29 +64,6 @@
     </div>
   </div>
   <div v-else class="map-placeholder">请先在设置中配置地图Key</div>
-
-    <!-- 信息窗体 -->
-    <div
-      v-for="info in infoWindowsRef"
-      :key="info.pointId"
-      class="info-window"
-      :style="{ left: info.x + 'px', top: (info.y - 120) + 'px' }"
-    >
-      <div class="info-window-content" @mousedown="startDrag($event, info)">
-        <button class="info-close-btn" @click.stop="closeInfoWindow(info.pointId)">✕</button>
-        <div class="info-title">{{ info.tagName }}</div>
-        <div class="info-body">
-          <div>时间: {{ info.time }}</div>
-          <div>经度: {{ info.lng }}</div>
-          <div>纬度: {{ info.lat }}</div>
-          <div>海拔: {{ info.alt }} m</div>
-          <div>航向角: {{ info.head }}°</div>
-          <div>速度: {{ info.speed }} m/s</div>
-          <div v-if="info.extra" v-html="info.extra" class="info-extra"></div>
-        </div>
-      </div>
-      <div class="info-connector"></div>
-    </div>
 </template>
 
 <script setup>
@@ -83,6 +84,7 @@ const showTraffic = ref(false)
 const infoWindowsRef = ref([])
 const draggingInfo = ref(null)
 const dragOffset = ref({ x: 0, y: 0 })
+const infoWindowsMap = new Map()
 
 let map = null
 let markers = []
@@ -93,7 +95,6 @@ let satelliteLayer = null
 let roadNetLayer = null
 let defaultLayer = null
 let markerRightClickHandled = false
-const infoWindowsMap = new Map()
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -291,11 +292,13 @@ const adjustColorBrightness = (hex, percent) => {
 
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
-  const day = date.getDate()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
-  return `${day}-${hours}:${minutes}:${seconds}`
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const closeInfoWindow = (pointId) => {
@@ -308,9 +311,10 @@ const closeInfoWindow = (pointId) => {
 
 const startDrag = (event, info) => {
   draggingInfo.value = info
+  info.isDragging = true
   dragOffset.value = {
     x: event.clientX - info.x,
-    y: event.clientY - (info.y - 120)
+    y: event.clientY - (info.y - 30)
   }
   document.addEventListener('mousemove', onDrag)
   document.addEventListener('mouseup', stopDrag)
@@ -321,14 +325,42 @@ const onDrag = (event) => {
   const info = infoWindowsRef.value.find(w => w.pointId === draggingInfo.value.pointId)
   if (info) {
     info.x = event.clientX - dragOffset.value.x
-    info.y = event.clientY - dragOffset.value.y + 120
+    info.y = event.clientY - dragOffset.value.y + 30
+    updateInfoWindowAnchor(info)
   }
 }
 
 const stopDrag = () => {
+  if (draggingInfo.value) {
+    draggingInfo.value.isDragging = false
+  }
   draggingInfo.value = null
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
+}
+
+const updateInfoWindowAnchor = (info) => {
+  if (!map || !mapLoaded) return
+  const point = getPointById(info.pointId)
+  if (!point) return
+  const currentPixel = map.lngLatToContainer([point.lng, point.lat])
+  const dx = info.x - currentPixel.x
+  const dy = (info.y - 30) - currentPixel.y
+  if (dy < -50) {
+    info.anchor = 'bottom'
+  } else if (dy > 50) {
+    info.anchor = 'top'
+  } else {
+    info.anchor = 'center'
+  }
+}
+
+const getPointById = (pointId) => {
+  for (const group of locationStore.locationGroups) {
+    const point = group.points.find(p => p.id === pointId)
+    if (point) return point
+  }
+  return null
 }
 
 const animateScale = (markerInstance) => {
@@ -367,16 +399,16 @@ const handleMarkerClick = (pointId, markerInstance) => {
   animateScale(markerInstance)
 }
 
-const createInfoWindow = (point, evt) => {
+const createInfoWindow = (point) => {
   if (infoWindowsMap.has(point.id)) {
-    closeInfoWindow(point.id)
     return
   }
 
-  const pixel = map.lngLatToContainer([point.lng, point.lat])
   const extraInfo = point.extra ? Object.entries(point.extra)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('<br>') : ''
+    .map(([key, value]) => `<div>${key}: ${value}</div>`)
+    : ''
+
+  const pixel = map.lngLatToContainer([point.lng, point.lat])
 
   infoWindowsRef.value.push({
     pointId: point.id,
@@ -389,7 +421,8 @@ const createInfoWindow = (point, evt) => {
     speed: point.speed || 0,
     extra: extraInfo,
     x: pixel.x,
-    y: pixel.y
+    y: pixel.y,
+    anchor: 'top'
   })
   infoWindowsMap.set(point.id, true)
 }
@@ -399,12 +432,26 @@ const updateInfoWindowPositions = () => {
   locationStore.locationGroups.forEach(group => {
     group.points.forEach(point => {
       const info = infoWindowsRef.value.find(w => w.pointId === point.id)
-      if (info) {
+      if (info && !info.isDragging) {
         const pixel = map.lngLatToContainer([point.lng, point.lat])
         info.x = pixel.x
         info.y = pixel.y
       }
     })
+  })
+  infoWindowsRef.value.forEach(info => {
+    const point = getPointById(info.pointId)
+    if (point) {
+      const mapCenter = map.getCenter()
+      const dy = mapCenter.getLat() - point.lat
+      if (dy > 0.01) {
+        info.anchor = 'bottom'
+      } else if (dy < -0.01) {
+        info.anchor = 'top'
+      } else {
+        info.anchor = 'top'
+      }
+    }
   })
 }
 
@@ -467,10 +514,12 @@ const updateMarkers = () => {
         marker.on('click', () => {
           handleMarkerClick(point.id, marker)
         })
-        marker.on('rightclick', (evt) => {
+        marker.on('mousedown', () => {
           markerRightClickHandled = true
-          createInfoWindow(point, evt)
-          setTimeout(() => { markerRightClickHandled = false }, 100)
+        })
+        marker.on('rightclick', () => {
+          createInfoWindow(point)
+          setTimeout(() => { markerRightClickHandled = false }, 500)
         })
         marker.setMap(map)
         markers.push(marker)
@@ -499,10 +548,12 @@ const updateMarkers = () => {
         marker.on('click', () => {
           handleMarkerClick(point.id, marker)
         })
-        marker.on('rightclick', (evt) => {
+        marker.on('mousedown', () => {
           markerRightClickHandled = true
-          createInfoWindow(point, evt)
-          setTimeout(() => { markerRightClickHandled = false }, 100)
+        })
+        marker.on('rightclick', () => {
+          createInfoWindow(point)
+          setTimeout(() => { markerRightClickHandled = false }, 500)
         })
         marker.setMap(map)
         markers.push(marker)
@@ -715,5 +766,118 @@ defineExpose({ updateMarkers, focusPoint })
   height: 1px;
   background: #f0f0f0;
   margin: 4px 0;
+}
+
+.amap-info-window {
+  padding: 0;
+}
+
+.amap-info-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #5c6bc0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8eaf6;
+  background: linear-gradient(135deg, #f8f8fc 0%, #f0f0f8 100%);
+}
+
+.amap-info-content {
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.info-window {
+  position: absolute;
+  z-index: 100;
+  cursor: move;
+}
+
+.info-window-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  padding: 10px;
+  min-width: 160px;
+  position: relative;
+}
+
+.info-close-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #999;
+  padding: 0;
+  line-height: 1;
+}
+
+.info-close-btn:hover {
+  color: #333;
+}
+
+.info-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #5c6bc0;
+  padding-right: 20px;
+  margin-bottom: 8px;
+}
+
+.info-body {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.info-extra {
+  margin-top: 4px;
+  border-top: 1px solid #eee;
+  padding-top: 4px;
+}
+
+.info-connector {
+  width: 2px;
+  height: 30px;
+  background: #5c6bc0;
+  margin: 0 auto;
+}
+
+.info-window.anchor-top .info-connector {
+  margin-top: 0;
+}
+
+.info-window.anchor-bottom {
+  transform: translateY(-60px);
+}
+
+.info-window.anchor-bottom .info-connector {
+  margin-bottom: 0;
+}
+
+.info-window.anchor-center .info-connector {
+  height: 60px;
+}
+
+.info-window .info-connector {
+  position: relative;
+}
+
+.info-window .info-connector::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: #5c6bc0;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 </style>
