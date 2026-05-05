@@ -24,6 +24,7 @@ export const useLocationStore = defineStore('locations', () => {
   const visiblePoints = ref(new Set())
   const selectedPoints = ref(new Set())
   const groupShowTrack = ref(new Set())
+  const focusedPointId = ref(null)
 
   const addGroup = (name, coords, coordType, extras = []) => {
     const cooSys = coordType === 'wgs84' ? 'W' : 'G'
@@ -116,6 +117,14 @@ export const useLocationStore = defineStore('locations', () => {
   }
 
   const isPointSelected = (pointId) => selectedPoints.value.has(pointId)
+
+  const setFocusedPoint = (pointId) => {
+    focusedPointId.value = pointId
+  }
+
+  const clearFocusedPoint = () => {
+    focusedPointId.value = null
+  }
 
   const togglePointDetail = (pointId) => {
     for (const group of locationGroups.value) {
@@ -285,12 +294,15 @@ export const useLocationStore = defineStore('locations', () => {
     visiblePoints,
     selectedPoints,
     groupShowTrack,
+    focusedPointId,
     addGroup, 
     toggleGroup, 
     togglePoint, 
     isPointVisible,
     toggleSelectedPoint,
     isPointSelected,
+    setFocusedPoint,
+    clearFocusedPoint,
     togglePointDetail,
     toggleGroupSelectAll,
     isGroupAllSelected,

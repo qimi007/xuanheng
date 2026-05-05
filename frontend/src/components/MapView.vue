@@ -40,6 +40,29 @@
     </div>
   </div>
   <div v-else class="map-placeholder">请先在设置中配置地图Key</div>
+
+    <!-- 信息窗体 -->
+    <div
+      v-for="info in infoWindowsRef"
+      :key="info.pointId"
+      class="info-window"
+      :style="{ left: info.x + 'px', top: (info.y - 120) + 'px' }"
+    >
+      <div class="info-window-content" @mousedown="startDrag($event, info)">
+        <button class="info-close-btn" @click.stop="closeInfoWindow(info.pointId)">✕</button>
+        <div class="info-title">{{ info.tagName }}</div>
+        <div class="info-body">
+          <div>时间: {{ info.time }}</div>
+          <div>经度: {{ info.lng }}</div>
+          <div>纬度: {{ info.lat }}</div>
+          <div>海拔: {{ info.alt }} m</div>
+          <div>航向角: {{ info.head }}°</div>
+          <div>速度: {{ info.speed }} m/s</div>
+          <div v-if="info.extra" v-html="info.extra" class="info-extra"></div>
+        </div>
+      </div>
+      <div class="info-connector"></div>
+    </div>
 </template>
 
 <script setup>
@@ -57,6 +80,9 @@ const menuPosition = ref({ x: 0, y: 0 })
 const mapType = ref('normal')
 const showRoadNet = ref(false)
 const showTraffic = ref(false)
+const infoWindowsRef = ref([])
+const draggingInfo = ref(null)
+const dragOffset = ref({ x: 0, y: 0 })
 
 let map = null
 let markers = []
@@ -66,6 +92,8 @@ let trafficLayer = null
 let satelliteLayer = null
 let roadNetLayer = null
 let defaultLayer = null
+let markerRightClickHandled = false
+const infoWindowsMap = new Map()
 
 const loadMapScript = (key) => {
   return new Promise((resolve, reject) => {
@@ -141,12 +169,23 @@ const initMap = async () => {
       updateMarkers()
       console.log('地图初始化完成, mapLoaded:', mapLoaded)
     })
+
+    map.on('moveend', () => {
+      updateInfoWindowPositions()
+    })
+
+    map.on('zoomend', () => {
+      updateInfoWindowPositions()
+    })
   } catch (e) {
     console.error('加载地图失败:', e)
   }
 }
 
 const handleContextMenu = (event) => {
+  if (markerRightClickHandled) {
+    return
+  }
   const rect = mapContainer.value.getBoundingClientRect()
   let x = event.clientX - rect.left
   let y = event.clientY - rect.top
@@ -250,6 +289,136 @@ const adjustColorBrightness = (hex, percent) => {
   return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)
 }
 
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp)
+  const day = date.getDate()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${day}-${hours}:${minutes}:${seconds}`
+}
+
+const closeInfoWindow = (pointId) => {
+  const idx = infoWindowsRef.value.findIndex(w => w.pointId === pointId)
+  if (idx !== -1) {
+    infoWindowsRef.value.splice(idx, 1)
+    infoWindowsMap.delete(pointId)
+  }
+}
+
+const startDrag = (event, info) => {
+  draggingInfo.value = info
+  dragOffset.value = {
+    x: event.clientX - info.x,
+    y: event.clientY - (info.y - 120)
+  }
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+}
+
+const onDrag = (event) => {
+  if (!draggingInfo.value) return
+  const info = infoWindowsRef.value.find(w => w.pointId === draggingInfo.value.pointId)
+  if (info) {
+    info.x = event.clientX - dragOffset.value.x
+    info.y = event.clientY - dragOffset.value.y + 120
+  }
+}
+
+const stopDrag = () => {
+  draggingInfo.value = null
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+}
+
+const animateScale = (markerInstance) => {
+  let scale = 1
+  const duration = 300
+  const maxScale = 2.0
+  const startTime = Date.now()
+  
+  const animate = () => {
+    const elapsed = Date.now() - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    if (progress < 0.5) {
+      scale = 1 + progress * (maxScale - 1) * 2
+    } else {
+      scale = maxScale - (progress - 0.5) * (maxScale - 1) * 2
+    }
+    
+    const currentZIndex = 10 + Math.floor((scale - 1) * 100)
+    markerInstance.setzIndex(currentZIndex)
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      markerInstance.setzIndex(10)
+    }
+  }
+  animate()
+}
+
+const handleMarkerClick = (pointId, markerInstance) => {
+  locationStore.setFocusedPoint(pointId)
+  animateScale(markerInstance)
+}
+
+const createInfoWindow = (point, evt) => {
+  if (infoWindowsMap.has(point.id)) {
+    closeInfoWindow(point.id)
+    return
+  }
+
+  const pixel = map.lngLatToContainer([point.lng, point.lat])
+  const extraInfo = point.extra ? Object.entries(point.extra)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('<br>') : ''
+
+  infoWindowsRef.value.push({
+    pointId: point.id,
+    tagName: point.tagName,
+    time: formatTime(point.time),
+    lng: point.lng.toFixed(6),
+    lat: point.lat.toFixed(6),
+    alt: point.alt || 0,
+    head: point.head || 0,
+    speed: point.speed || 0,
+    extra: extraInfo,
+    x: pixel.x,
+    y: pixel.y
+  })
+  infoWindowsMap.set(point.id, true)
+}
+
+const updateInfoWindowPositions = () => {
+  if (!map || !mapLoaded) return
+  locationStore.locationGroups.forEach(group => {
+    group.points.forEach(point => {
+      const info = infoWindowsRef.value.find(w => w.pointId === point.id)
+      if (info) {
+        const pixel = map.lngLatToContainer([point.lng, point.lat])
+        info.x = pixel.x
+        info.y = pixel.y
+      }
+    })
+  })
+}
+
+const focusPoint = (point) => {
+  if (!map || !mapLoaded) return
+  
+  map.setCenter([point.lng, point.lat])
+  
+  const targetMarker = markers.find(m => {
+    const ext = m.getExtData()
+    return ext === point.id || (ext && ext.pointId === point.id)
+  })
+  
+  if (targetMarker) {
+    animateScale(targetMarker)
+  }
+}
+
 const updateMarkers = () => {
   if (!map || !mapLoaded) return
 
@@ -282,7 +451,14 @@ const updateMarkers = () => {
             imageOffset: new window.AMap.Pixel(0, 0)
           }),
           angle: head,
-          zIndex: 10
+          zIndex: 10,
+          extData: point.id
+        })
+        marker.on('click', () => handleMarkerClick(point.id, marker))
+        marker.on('rightclick', (evt) => {
+          markerRightClickHandled = true
+          createInfoWindow(point, evt)
+          setTimeout(() => { markerRightClickHandled = false }, 100)
         })
         marker.setMap(map)
         markers.push(marker)
@@ -294,7 +470,14 @@ const updateMarkers = () => {
           fillOpacity: 0.8,
           strokeColor: strokeColor,
           strokeWidth: 1,
-          zIndex: 10
+          zIndex: 10,
+          extData: { radius: 6 }
+        })
+        marker.on('click', () => handleMarkerClick(point.id, marker))
+        marker.on('rightclick', (evt) => {
+          markerRightClickHandled = true
+          createInfoWindow(point, evt)
+          setTimeout(() => { markerRightClickHandled = false }, 100)
         })
         marker.setMap(map)
         markers.push(marker)
@@ -357,7 +540,22 @@ watch(() => [locationStore.locationGroups, locationStore.visiblePoints, location
   updateMarkers()
 }, { deep: true })
 
-defineExpose({ updateMarkers })
+watch(() => locationStore.focusedPointId, (pointId) => {
+  if (!pointId) return
+  let targetPoint = null
+  for (const group of locationStore.locationGroups) {
+    const point = group.points.find(p => p.id === pointId)
+    if (point) {
+      targetPoint = point
+      break
+    }
+  }
+  if (targetPoint) {
+    focusPoint(targetPoint)
+  }
+})
+
+defineExpose({ updateMarkers, focusPoint })
 </script>
 
 <style scoped>
@@ -374,6 +572,66 @@ defineExpose({ updateMarkers })
   justify-content: center;
   background: #f5f5f5;
   color: #999;
+}
+
+.info-window {
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+  cursor: move;
+}
+
+.info-window-content {
+  pointer-events: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  padding: 10px;
+  min-width: 160px;
+  position: relative;
+}
+
+.info-close-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #999;
+  padding: 0;
+  line-height: 1;
+}
+
+.info-close-btn:hover {
+  color: #333;
+}
+
+.info-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #5c6bc0;
+  padding-right: 20px;
+}
+
+.info-body {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.info-extra {
+  margin-top: 4px;
+  border-top: 1px solid #eee;
+  padding-top: 4px;
+}
+
+.info-connector {
+  width: 2px;
+  height: 30px;
+  background: #5c6bc0;
+  margin: 0 auto;
 }
 
 .context-menu {

@@ -192,7 +192,14 @@
           </div>
 
           <div v-if="group.visible" class="points">
-            <div v-for="point in group.filteredPoints" :key="point.id" class="point-item">
+            <div 
+              v-for="point in group.filteredPoints" 
+              :key="point.id" 
+              class="point-item"
+              :id="'point-' + point.id"
+              :class="{ 'point-focused': locationStore.focusedPointId === point.id }"
+              @dblclick="locationStore.setFocusedPoint(point.id)"
+            >
               <div class="point-checkbox">
                 <input
                   type="checkbox"
@@ -225,7 +232,7 @@
                     @change="locationStore.togglePointDetail(point.id)"
                   />
                 </div>
-                <div class="point-coord-row">
+                <div class="point-coord-row" @dblclick.stop="locationStore.setFocusedPoint(point.id)">
                   <span class="point-coordsys">[{{ point.cooSys }}]</span>
                   <span class="point-coord" @click="copyCoords(point)">{{ point.lng.toFixed(6) }},{{ point.lat.toFixed(6) }}</span>
                   <span class="point-time">{{ formatTime(point.time) }}</span>
@@ -241,12 +248,26 @@
 </template>
 
 <script setup>
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, watch } from 'vue'
 import { useLocationStore } from '../stores/locations'
 
 defineEmits(['close'])
 
 const locationStore = useLocationStore()
+
+watch(() => locationStore.focusedPointId, (newPointId) => {
+  if (newPointId) {
+    nextTick(() => {
+      const el = document.getElementById('point-' + newPointId)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => {
+          locationStore.clearFocusedPoint()
+        }, 500)
+      }
+    })
+  }
+})
 
 const colorPalette = [
   '#5c6bc0', '#ef5350', '#66bb6a', '#ffa726', '#ab47bc', 
@@ -930,6 +951,11 @@ const handleClear = () => {
 
 .point-item:last-child {
   border-bottom: none;
+}
+
+.point-focused {
+  background: linear-gradient(90deg, rgba(92, 107, 192, 0.2) 0%, rgba(92, 107, 192, 0.05) 100%);
+  border-left: 3px solid #5c6bc0;
 }
 
 .point-checkbox {
