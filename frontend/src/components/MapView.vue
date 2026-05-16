@@ -432,12 +432,11 @@ const createInfoWindow = (point) => {
 const updateInfoWindowPositions = () => {
   if (!map || !mapLoaded) return
   locationStore.locationGroups.forEach(group => {
-    const cooSys = group.cooSys || 'W'
     group.points.forEach(point => {
       const info = infoWindowsRef.value.find(w => w.pointId === point.id)
       if (info && !info.isDragging) {
-        const coord = convertCoord(point.lng, point.lat, cooSys)
-        const pixel = map.lngLatToContainer([coord.lng, coord.lat])
+        const mapCoord = locationStore.getMapCoord(point)
+        const pixel = map.lngLatToContainer([mapCoord.lng, mapCoord.lat])
         info.x = pixel.x
         info.y = pixel.y
       }
@@ -446,11 +445,9 @@ const updateInfoWindowPositions = () => {
   infoWindowsRef.value.forEach(info => {
     const point = getPointById(info.pointId)
     if (point) {
-      const group = locationStore.locationGroups.find(g => g.points.some(p => p.id === info.pointId))
-      const cooSys = point.cooSys || (group ? group.cooSys : 'W') || 'W'
-      const coord = convertCoord(point.lng, point.lat, cooSys)
+      const mapCoord = locationStore.getMapCoord(point)
       const mapCenter = map.getCenter()
-      const dy = mapCenter.getLat() - coord.lat
+      const dy = mapCenter.getLat() - mapCoord.lat
       if (dy > 0.01) {
         info.anchor = 'bottom'
       } else if (dy < -0.01) {
@@ -465,11 +462,9 @@ const updateInfoWindowPositions = () => {
 const focusPoint = (point) => {
   if (!map || !mapLoaded) return
 
-  const group = locationStore.locationGroups.find(g => g.points.some(p => p.id === point.id))
-  const cooSys = point.cooSys || (group ? group.cooSys : 'W') || 'W'
-  const coord = convertCoord(point.lng, point.lat, cooSys)
+  const mapCoord = locationStore.getMapCoord(point)
 
-  map.setCenter([coord.lng, coord.lat])
+  map.setCenter([mapCoord.lng, mapCoord.lat])
 
   const targetMarker = markers.find(m => {
     const ext = m.getExtData()
