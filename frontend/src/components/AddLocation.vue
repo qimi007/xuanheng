@@ -48,14 +48,42 @@
         <p class="form-hint">支持JSON格式POS文件</p>
       </div>
 
-      <div v-else class="form-section">
-        <label class="form-label">文件路径</label>
+      <div v-else-if="inputMethod === 'log'" class="form-section">
+        <label class="form-label">日志目录</label>
         <input
           type="text"
-          v-model="filePath"
+          v-model="logDirectory"
           class="form-input"
-          placeholder="输入日志文件路径"
+          placeholder="输入日志文件所在目录"
         />
+        <div v-if="logScanResult" class="log-scan-info">
+          <span>找到 {{ logScanResult.totalFiles }} 个文件 ({{ formatSize(logScanResult.totalSize) }})</span>
+        </div>
+        <button class="btn-secondary" @click="scanLogDirectory" :disabled="logScanning">
+          {{ logScanning ? '扫描中...' : '扫描文件' }}
+        </button>
+      </div>
+
+      <div v-if="inputMethod === 'log'" class="form-section">
+        <label class="form-label">搜索关键字（正则表达式）</label>
+        <input
+          type="text"
+          v-model="logPattern"
+          class="form-input"
+          placeholder="示例: position.*?lng=([\d.]+).*?lat=([\d.]+)"
+        />
+        <p class="form-hint">支持命名捕获组，如 ?&lt;lng&gt;([\d.]+)</p>
+      </div>
+
+      <div v-if="inputMethod === 'log'" class="form-section">
+        <label class="form-label">字段对齐说明</label>
+        <input
+          type="text"
+          v-model="logFieldMapping"
+          class="form-input"
+          placeholder="lng,lat,alt,head,speed,cooSys,time,tagName@extra1,extra2"
+        />
+        <p class="form-hint">@前为必要字段，@后为extra字段，用逗号分隔</p>
       </div>
 
       <div class="form-section">
@@ -84,6 +112,12 @@ const groupName = ref('')
 const posFileInput = ref(null)
 const posFileName = ref('')
 const posFileData = ref(null)
+const logDirectory = ref('')
+const logPattern = ref('')
+const logFieldMapping = ref('lng,lat,alt,head,speed,cooSys,time,tagName')
+const logScanResult = ref(null)
+const logScanning = ref(false)
+const logPoints = ref([])
 
 const parseCoordinates = (text) => {
   const points = text.split(';').map(s => s.trim()).filter(s => s)
@@ -127,6 +161,68 @@ const handlePosFileSelect = (event) => {
   reader.readAsText(file)
 }
 
+const formatSize = (bytes) => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+const scanLogDirectory = async () => {
+  if (!logDirectory.value) {
+    alert('请输入日志目录')
+    return
+  }
+  logScanning.value = true
+  try {
+    const response = await fetch('/api/log/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory: logDirectory.value })
+    })
+    const data = await response.json()
+    if (data.error) {
+      alert(data.error)
+    } else {
+      logScanResult.value = data
+    }
+  } catch (e) {
+    alert('扫描失败：' + e.message)
+  } finally {
+    logScanning.value = false
+  }
+}
+
+const parseLogFiles = async () => {
+  if (!logDirectory.value || !logPattern.value) {
+    alert('请填写完整信息')
+    return
+  }
+  logScanning.value = true
+  try {
+    const response = await fetch('/api/log/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        directory: logDirectory.value,
+        pattern: logPattern.value,
+        fieldMapping: logFieldMapping.value
+      })
+    })
+    const data = await response.json()
+    if (data.error) {
+      alert(data.error)
+      return null
+    }
+    logPoints.value = data.points || []
+    return logPoints.value
+  } catch (e) {
+    alert('解析失败：' + e.message)
+    return null
+  } finally {
+    logScanning.value = false
+  }
+}
+
 const parsePosData = (data) => {
   const cooSysMap = {
     'W': 'W', 'WGS84': 'W', 'wgs84': 'W', '1': 'W',
@@ -165,7 +261,7 @@ const parsePosData = (data) => {
   }).filter(p => p !== null)
 }
 
-const handleAdd = () => {
+const handleAdd = async () => {
   const name = groupName.value || `分组 ${new Date().toLocaleTimeString()}`
   let coords = []
   let extras = []
@@ -189,6 +285,15 @@ const handleAdd = () => {
     coords = parsed.map(p => ({ lng: p.lng, lat: p.lat }))
     extras = parsed
     coordType.value = parsed[0].cooSys === 'G' ? 'gcj02' : 'wgs84'
+  } else if (inputMethod.value === 'log') {
+    const points = await parseLogFiles()
+    if (!points || points.length === 0) {
+      alert('未找到匹配的坐标数据')
+      return
+    }
+    coords = points.map(p => ({ lng: p.lng, lat: p.lat }))
+    extras = points
+    coordType.value = points[0].cooSys === 'G' ? 'gcj02' : 'wgs84'
   } else {
     alert('文件加载功能待实现')
     return
@@ -201,6 +306,11 @@ const handleAdd = () => {
   posFileName.value = ''
   posFileData.value = null
   if (posFileInput.value) posFileInput.value.value = ''
+  logDirectory.value = ''
+  logPattern.value = ''
+  logFieldMapping.value = 'lng,lat,alt,head,speed,cooSys,time,tagName'
+  logScanResult.value = null
+  logPoints.value = []
   emit('added')
 }
 </script>
@@ -338,5 +448,34 @@ const handleAdd = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.log-scan-info {
+  font-size: 11px;
+  color: #5c6bc0;
+  padding: 4px 8px;
+  background: #e8eaf6;
+  border-radius: 4px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+  color: #5c6bc0;
+  border: 1px solid #7986cb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c5cae9 0%, #9fa8da 100%);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

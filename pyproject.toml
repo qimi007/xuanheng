@@ -8,6 +8,7 @@ dependencies = [
     "flask-cors>=4.0.0",
     "pywebview>=4.0",
     "waitress>=2.0.0",
+    "zstandard>=0.22.0",
 ]
 
 [dependency-groups]
