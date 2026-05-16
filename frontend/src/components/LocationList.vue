@@ -158,6 +158,41 @@
       </div>
     </div>
 
+    <div v-if="showExportDialog" class="export-dialog-overlay" @click="closeExportDialog">
+      <div class="export-dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>选择导出格式</h3>
+          <button class="close-btn" @click="closeExportDialog">✕</button>
+        </div>
+        <div class="dialog-content">
+          <div class="export-options">
+            <label class="export-option" :class="{ active: exportFormat === 'json' }">
+              <input type="radio" v-model="exportFormat" value="json" />
+              <span class="option-label">
+                <span class="option-title">JSON 格式</span>
+                <span class="option-desc">默认格式，支持完整字段和别名</span>
+              </span>
+            </label>
+            <label class="export-option" :class="{ active: exportFormat === 'csv' }">
+              <input type="radio" v-model="exportFormat" value="csv" />
+              <span class="option-label">
+                <span class="option-title">CSV 格式</span>
+                <span class="option-desc">表格格式，兼容Excel等工具</span>
+              </span>
+            </label>
+          </div>
+          <button class="btn-export" @click="confirmExport">
+            <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>导出文件</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="list-content">
       <div v-if="totalPoints === 0" class="empty">
         <p>暂无位置数据</p>
@@ -360,7 +395,7 @@ const handleContextMenuAction = (action) => {
       break
     case 'export':
       if (canExport.value) {
-        exportGroup(groupId)
+        openExportDialog(groupId)
       }
       break
     case 'editName':
@@ -425,6 +460,10 @@ const deletePointCount = ref(0)
 
 const showDeleteGroupDialog = ref(false)
 const deleteGroupName = ref('')
+
+const showExportDialog = ref(false)
+const exportFormat = ref('json')
+const exportGroupId = ref(null)
 
 const totalPoints = computed(() => {
   return locationStore.locationGroups.reduce((sum, g) => sum + g.points.length, 0)
@@ -592,7 +631,25 @@ const closeDeleteGroupDialog = () => {
   deleteGroupName.value = ''
 }
 
-const exportGroup = (groupId) => {
+const openExportDialog = (groupId) => {
+  exportGroupId.value = groupId
+  exportFormat.value = 'json'
+  showExportDialog.value = true
+}
+
+const closeExportDialog = () => {
+  showExportDialog.value = false
+  exportGroupId.value = null
+  exportFormat.value = 'json'
+}
+
+const confirmExport = () => {
+  if (!exportGroupId.value) return
+  exportGroup(exportGroupId.value, exportFormat.value)
+  closeExportDialog()
+}
+
+const exportGroup = (groupId, format = 'json') => {
   const group = locationStore.locationGroups.find(g => g.id === groupId)
   if (!group) return
   
@@ -604,20 +661,47 @@ const exportGroup = (groupId) => {
   
   const now = new Date()
   const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
-  const filename = `${group.name}-${timestamp}.pos`
+  const safeName = group.name.replace(/[\\/:*?"<>|]/g, '_')
   
-  let content = ''
-  selectedPoints.forEach(p => {
-    content += `${p.lng.toFixed(6)},${p.lat.toFixed(6)},${p.alt},${p.tagName},${p.cooSys},${p.datetime}\n`
-  })
+  if (format === 'json') {
+    const filename = `${safeName}-${timestamp}.pos.json`
+    const data = selectedPoints.map(p => ({
+      lng: p.lng,
+      lat: p.lat,
+      alt: p.alt,
+      head: p.head,
+      speed: p.speed,
+      cooSys: p.cooSys,
+      time: p.datetime,
+      tagName: p.tagName,
+      ...(p.extra && Object.keys(p.extra).length > 0 ? { extra: p.extra } : {})
+    }))
+    const content = JSON.stringify(data, null, 2)
+    downloadFile(content, filename, 'application/json')
+  } else {
+    const filename = `${safeName}-${timestamp}.pos.csv`
+    let content = 'lng,lat,alt,head,speed,cooSys,time,tagName\n'
+    selectedPoints.forEach(p => {
+      content += `${p.lng.toFixed(6)},${p.lat.toFixed(6)},${p.alt},${p.head},${p.speed},${p.cooSys},${p.datetime},${p.tagName}\n`
+    })
+    downloadFile(content, filename, 'text/csv')
+  }
+}
+
+const downloadFile = async (content, filename, mimeType) => {
+  const isJson = mimeType.includes('json')
+  const fileTypes = isJson ? ['POS JSON (*.pos.json)'] : ['POS CSV (*.pos.csv)']
   
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+  try {
+    const result = await window.pywebview.api.save_file(content, filename, fileTypes)
+    if (result.status === 'cancelled') {
+      // 用户取消
+    } else if (result.status !== 'ok') {
+      alert('导出失败')
+    }
+  } catch (e) {
+    alert('导出失败：' + e.message)
+  }
 }
 
 const startEditGroup = (group) => {
@@ -1295,6 +1379,127 @@ const handleClear = () => {
 
 .btn-confirm:hover {
   background: #d32f2f;
+}
+
+.export-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.export-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.export-dialog .dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.export-dialog .dialog-header h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.export-dialog .dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 2px solid #e0e0e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-option:hover {
+  border-color: #7986cb;
+  background: #f8f8fc;
+}
+
+.export-option.active {
+  border-color: #5c6bc0;
+  background: #e8eaf6;
+}
+
+.export-option input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.option-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.option-desc {
+  font-size: 11px;
+  color: #888;
+}
+
+.btn-export {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(92, 107, 192, 0.3);
+}
+
+.btn-export:hover {
+  background: linear-gradient(135deg, #5c6bc0 0%, #3f51b5 100%);
+  box-shadow: 0 6px 16px rgba(92, 107, 192, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-export:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(92, 107, 192, 0.3);
+}
+
+.export-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .context-menu-overlay {

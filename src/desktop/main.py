@@ -17,6 +17,21 @@ FRONTEND_DIR = os.path.join(PROJECT_DIR, 'frontend')
 DIST_DIR = os.path.join(FRONTEND_DIR, 'dist')
 VERSION = 'v1.0.0'
 
+class Api:
+    def save_file(self, content, filename, file_types):
+        """弹出保存对话框并写入文件"""
+        result = webview.windows[0].create_file_dialog(
+            dialog_type=webview.FileDialog.SAVE,
+            save_filename=filename,
+            file_types=file_types
+        )
+        if result and len(result) > 0:
+            path = result[0]
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return {'status': 'ok', 'path': path}
+        return {'status': 'cancelled'}
+
 def build_frontend():
     if IS_FROZEN:
         return
@@ -66,5 +81,5 @@ if __name__ == '__main__':
     title = get_window_title()
     print(f"窗口标题: {title}")
     
-    window = webview.create_window(title, 'http://localhost:5000')
+    window = webview.create_window(title, 'http://localhost:5000', js_api=Api())
     webview.start(debug=True)

@@ -1,0 +1,178 @@
+{
+  "name": "pos",
+  "description": "POS位置数据文件格式定义",
+  "version": "1.0.0",
+  "defaultFormat": "json",
+  "formats": {
+    "json": {
+      "type": "array",
+      "description": "JSON数组格式，每个元素为一个位置点对象",
+      "encoding": "utf-8",
+      "fields": {
+        "lng": {
+          "type": "number",
+          "required": true,
+          "aliases": ["longitude", "lon", "经度"],
+          "description": "经度"
+        },
+        "lat": {
+          "type": "number",
+          "required": true,
+          "aliases": ["latitude", "纬度"],
+          "description": "纬度"
+        },
+        "alt": {
+          "type": "number",
+          "required": false,
+          "default": 0,
+          "aliases": ["altitude", "elevation", "海拔"],
+          "description": "海拔(米)"
+        },
+        "tagName": {
+          "type": "string",
+          "required": false,
+          "default": "auto",
+          "aliases": ["name", "tag", "label", "名称", "点名"],
+          "description": "位置点名称，auto表示自动生成"
+        },
+        "cooSys": {
+          "type": "string",
+          "required": false,
+          "default": "W",
+          "aliases": ["coordinateSystem", "coordSys", "坐标系"],
+          "description": "坐标系: W=WGS84, G=GCJ-02"
+        },
+        "time": {
+          "type": "datetime",
+          "required": false,
+          "aliases": ["timestamp", "datetime", "date", "时间"],
+          "formats": [
+            "YYYY-MM-DD HH:mm:ss",
+            "YYYY/MM/DD HH:mm:ss",
+            "YYYY-MM-DDTHH:mm:ss",
+            "YYYY-MM-DDTHH:mm:ss.SSSZ",
+            "YYYYMMDD_HHmmss",
+            "timestamp",
+            "timestamp_ms"
+          ],
+          "default": "now",
+          "description": "时间，支持多种日期格式和Unix时间戳(秒/毫秒)"
+        },
+        "head": {
+          "type": "number",
+          "required": false,
+          "default": 0,
+          "aliases": ["heading", "yaw", "航向", "航向角"],
+          "description": "航向角度(度)"
+        },
+        "speed": {
+          "type": "number",
+          "required": false,
+          "default": 0,
+          "aliases": ["velocity", "速度"],
+          "description": "速度(m/s)"
+        }
+      },
+      "cooSysMapping": {
+        "W": ["W", "WGS84", "wgs84", "1"],
+        "G": ["G", "GCJ02", "gcj02", "GCJ-02", "2"]
+      },
+      "tagNameAutoFormat": "点{index}",
+      "extraFields": {
+        "description": "未定义的字段存入extra对象",
+        "enabled": true
+      }
+    },
+    "csv": {
+      "type": "table",
+      "description": "CSV表格格式，支持有表头和无表头两种形式",
+      "encoding": "utf-8",
+      "delimiter": ",",
+      "hasHeader": "auto",
+      "skipEmptyLines": true,
+      "skipCommentLines": true,
+      "commentPrefix": "#",
+      "columns": [
+        {
+          "index": 0,
+          "field": "lng",
+          "type": "number",
+          "required": true,
+          "description": "经度"
+        },
+        {
+          "index": 1,
+          "field": "lat",
+          "type": "number",
+          "required": true,
+          "description": "纬度"
+        },
+        {
+          "index": 2,
+          "field": "alt",
+          "type": "number",
+          "required": false,
+          "default": 0,
+          "description": "海拔(米)"
+        },
+        {
+          "index": 3,
+          "field": "head",
+          "type": "number",
+          "required": false,
+          "default": 0,
+          "description": "航向角度(度)"
+        },
+        {
+          "index": 4,
+          "field": "speed",
+          "type": "number",
+          "required": false,
+          "default": 0,
+          "description": "速度(m/s)"
+        },
+        {
+          "index": 5,
+          "field": "cooSys",
+          "type": "string",
+          "required": false,
+          "default": "W",
+          "description": "坐标系: W=WGS84, G=GCJ-02"
+        },
+        {
+          "index": 6,
+          "field": "time",
+          "type": "datetime",
+          "required": false,
+          "formats": [
+            "YYYY-MM-DD HH:mm:ss",
+            "YYYY/MM/DD HH:mm:ss",
+            "YYYY-MM-DDTHH:mm:ss",
+            "YYYYMMDD_HHmmss",
+            "timestamp",
+            "timestamp_ms"
+          ],
+          "default": "now",
+          "description": "时间，支持多种日期格式和Unix时间戳(秒/毫秒)"
+        },
+        {
+          "index": 7,
+          "field": "tagName",
+          "type": "string",
+          "required": false,
+          "default": "auto",
+          "description": "位置点名称，auto表示自动生成"
+        }
+      ],
+      "cooSysMapping": {
+        "W": ["W", "WGS84", "wgs84", "1"],
+        "G": ["G", "GCJ02", "gcj02", "GCJ-02", "2"]
+      },
+      "tagNameAutoFormat": "点{index}",
+      "extraFields": {
+        "description": "超出定义列的额外字段存入extra对象",
+        "enabled": true
+      }
+    }
+  }
+}
