@@ -50,13 +50,28 @@
             ></textarea>
             <p class="form-hint">多个点用分号(;)分隔，不区分经纬度顺序</p>
           </div>
+          <div v-else-if="addInputMethod === 'pos'" class="form-item">
+            <label class="form-label">选择POS文件</label>
+            <div class="file-picker" @click="selectPosFile">
+              <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <span class="file-name">{{ posFileName || '点击选择POS文件' }}</span>
+            </div>
+            <input ref="posFileInput" type="file" accept=".pos.json,.json" style="display:none" @change="handlePosFileSelect" />
+            <p class="form-hint">支持JSON格式POS文件</p>
+          </div>
           <div v-else class="form-item">
             <label class="form-label">文件路径</label>
             <input
               type="text"
               v-model="addFilePath"
               class="form-input"
-              :placeholder="addInputMethod === 'pos' ? '输入POS文件路径' : '输入日志文件路径'"
+              placeholder="输入日志文件路径"
             />
           </div>
           <button class="btn-submit" @click="handleAddPoints">添加</button>
@@ -452,6 +467,9 @@ const addCoordType = ref('wgs84')
 const addInputMethod = ref('manual')
 const addCoordinates = ref('')
 const addFilePath = ref('')
+const posFileInput = ref(null)
+const posFileName = ref('')
+const posFileData = ref(null)
 
 const showDeleteDialog = ref(false)
 const deleteGroup = ref(null)
@@ -539,12 +557,75 @@ const openAddDialog = (groupId) => {
   addInputMethod.value = 'manual'
   addCoordinates.value = ''
   addFilePath.value = ''
+  posFileName.value = ''
+  posFileData.value = null
+  if (posFileInput.value) posFileInput.value.value = ''
   showAddDialog.value = true
 }
 
 const closeAddDialog = () => {
   showAddDialog.value = false
   addToGroupId.value = null
+}
+
+const selectPosFile = () => {
+  posFileInput.value?.click()
+}
+
+const handlePosFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  posFileName.value = file.name
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result)
+      posFileData.value = Array.isArray(data) ? data : []
+    } catch (err) {
+      alert('POS文件格式错误：' + err.message)
+      posFileData.value = null
+    }
+  }
+  reader.readAsText(file)
+}
+
+const parsePosData = (data) => {
+  const cooSysMap = {
+    'W': 'W', 'WGS84': 'W', 'wgs84': 'W', '1': 'W',
+    'G': 'G', 'GCJ02': 'G', 'gcj02': 'G', 'GCJ-02': 'G', '2': 'G'
+  }
+  
+  return data.map(item => {
+    const lng = item.lng ?? item.longitude ?? item.lon ?? item.经度
+    const lat = item.lat ?? item.latitude ?? item.纬度
+    
+    if (lng === undefined || lat === undefined) return null
+    
+    const cooSys = cooSysMap[item.cooSys ?? item.coordinateSystem ?? item.coordSys ?? item.坐标系] || 'W'
+    const time = item.time ?? item.timestamp ?? item.datetime ?? item.date ?? item.时间
+    const timestamp = typeof time === 'number' ? (time < 1e12 ? time * 1000 : time) : (time ? new Date(time).getTime() : Date.now())
+    
+    const extra = {}
+    const knownFields = ['lng', 'lat', 'alt', 'head', 'speed', 'cooSys', 'time', 'tagName', 'longitude', 'lon', 'latitude', 'coordinateSystem', 'coordSys', 'timestamp', 'datetime', 'date', 'heading', 'yaw', 'velocity', 'name', 'tag', 'label', 'altitude', 'elevation', '经度', '纬度', '海拔', '航向', '航向角', '速度', '坐标系', '时间', '名称', '点名']
+    Object.keys(item).forEach(key => {
+      if (!knownFields.includes(key)) {
+        extra[key] = item[key]
+      }
+    })
+    
+    return {
+      lng: parseFloat(lng),
+      lat: parseFloat(lat),
+      alt: parseFloat(item.alt ?? item.altitude ?? item.elevation ?? item.海拔 ?? 0),
+      head: parseFloat(item.head ?? item.heading ?? item.yaw ?? item.航向 ?? item.航向角 ?? 0),
+      speed: parseFloat(item.speed ?? item.velocity ?? item.速度 ?? 0),
+      cooSys,
+      time: isNaN(timestamp) ? Date.now() : timestamp,
+      tagName: (item.tagName ?? item.name ?? item.tag ?? item.label ?? item.名称 ?? item.点名) || 'auto',
+      extra: Object.keys(extra).length > 0 ? extra : undefined
+    }
+  }).filter(p => p !== null)
 }
 
 const parseCoordinates = (text) => {
@@ -569,6 +650,7 @@ const parseCoordinates = (text) => {
 
 const handleAddPoints = () => {
   let coords = []
+  let extras = []
   
   if (addInputMethod.value === 'manual') {
     coords = parseCoordinates(addCoordinates.value)
@@ -576,12 +658,25 @@ const handleAddPoints = () => {
       alert('请输入有效的坐标')
       return
     }
+  } else if (addInputMethod.value === 'pos') {
+    if (!posFileData.value || posFileData.value.length === 0) {
+      alert('请先选择有效的POS文件')
+      return
+    }
+    const parsed = parsePosData(posFileData.value)
+    if (parsed.length === 0) {
+      alert('POS文件中无有效坐标数据')
+      return
+    }
+    coords = parsed.map(p => ({ lng: p.lng, lat: p.lat }))
+    extras = parsed
+    addCoordType.value = parsed[0].cooSys === 'G' ? 'gcj02' : 'wgs84'
   } else {
     alert('文件加载功能待实现')
     return
   }
   
-  locationStore.addPointsToGroup(addToGroupId.value, coords, addCoordType.value)
+  locationStore.addPointsToGroup(addToGroupId.value, coords, addCoordType.value, extras)
   closeAddDialog()
 }
 
@@ -1313,6 +1408,38 @@ const handleClear = () => {
 
 .add-dialog .btn-submit:hover {
   background: #5c6bc0;
+}
+
+.add-dialog .file-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px dashed #e0e0e8;
+  border-radius: 6px;
+  background: #f8f8fc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-dialog .file-picker:hover {
+  border-color: #7986cb;
+  background: #f0f0ff;
+}
+
+.add-dialog .file-icon {
+  width: 20px;
+  height: 20px;
+  color: #5c6bc0;
+  flex-shrink: 0;
+}
+
+.add-dialog .file-name {
+  font-size: 12px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .delete-dialog {

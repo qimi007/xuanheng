@@ -362,7 +362,10 @@ export const useLocationStore = defineStore('locations', () => {
         alt: extras[index]?.alt !== undefined ? extras[index].alt : 0,
         time: timestamp,
         datetime: formatDateTime(timestamp),
-        extra: extras[index]?.extra || {}
+        extra: extras[index]?.extra || {},
+        showDetail: true,
+        head: extras[index]?.head || 0,
+        speed: extras[index]?.speed || 0
       }
 
       group.points.push(newPoint)
