@@ -3,6 +3,8 @@ import threading
 import time
 import sys
 import os
+import socket
+import random
 import subprocess
 import urllib.request
 
@@ -16,6 +18,21 @@ else:
 FRONTEND_DIR = os.path.join(PROJECT_DIR, 'frontend')
 DIST_DIR = os.path.join(FRONTEND_DIR, 'dist')
 VERSION = 'v1.0.0'
+
+SERVER_PORT = None
+
+def find_available_port(start=10000, end=11000):
+    """在指定范围内查找可用端口"""
+    ports = list(range(start, end + 1))
+    random.shuffle(ports)
+    for port in ports:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', port))
+                return port
+        except OSError:
+            continue
+    raise RuntimeError(f"无法在 {start}-{end} 范围内找到可用端口")
 
 class Api:
     def save_file(self, content, filename, file_types):
@@ -41,17 +58,19 @@ def build_frontend():
     else:
         print("前端已构建")
 
-def run_server():
+def run_server(port):
+    global SERVER_PORT
+    SERVER_PORT = port
     if IS_FROZEN:
         from app import app
     else:
         sys.path.insert(0, os.path.join(PROJECT_DIR, 'src', 'backend'))
         from app import app
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
-def get_window_title():
+def get_window_title(port):
     try:
-        response = urllib.request.urlopen('http://localhost:5000/api/status', timeout=3)
+        response = urllib.request.urlopen(f'http://localhost:{port}/api/status', timeout=3)
         data = response.read().decode('utf-8')
         import json
         status = json.loads(data)
@@ -73,13 +92,16 @@ def get_window_title():
 if __name__ == '__main__':
     build_frontend()
     
-    server_thread = threading.Thread(target=run_server, daemon=True)
+    port = find_available_port()
+    print(f"使用端口: {port}")
+    
+    server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
     server_thread.start()
     
     time.sleep(2)
     
-    title = get_window_title()
+    title = get_window_title(port)
     print(f"窗口标题: {title}")
     
-    window = webview.create_window(title, 'http://localhost:5000', js_api=Api())
+    window = webview.create_window(title, f'http://localhost:{port}', js_api=Api())
     webview.start(debug=True)
