@@ -104,4 +104,8 @@ if __name__ == '__main__':
     print(f"窗口标题: {title}")
     
     window = webview.create_window(title, f'http://localhost:{port}', js_api=Api())
-    webview.start(debug=True)
+    
+    debug_mode = os.path.exists('D:\\Magic\\debugtool')
+    print(f"Debug模式: {debug_mode}")
+    
+    webview.start(debug=debug_mode)
