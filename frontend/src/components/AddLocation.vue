@@ -293,7 +293,6 @@ const handleAdd = async () => {
     }
     coords = points.map(p => ({ lng: p.lng, lat: p.lat }))
     extras = points
-    coordType.value = points[0].cooSys === 'G' ? 'gcj02' : 'wgs84'
   } else {
     alert('文件加载功能待实现')
     return
