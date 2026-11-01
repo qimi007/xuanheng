@@ -9,15 +9,18 @@
 
 - **主框架**：Python + uv
 - **前端**：Vue 3 + Vite + Pinia
-- **后端**：Flask + Waitress
-- **桌面端**：PyWebView
+- **桌面端**：PyTauri（pytauri-wheel 0.8，无需 Rust；前端通过 IPC 调用 Python）
+- **后端（过渡/浏览器开发）**：Flask + Waitress（仅浏览器开发模式使用）
 - **地图服务**：高德地图 API（已完成）/ 百度地图 / Google Maps（暂不支持）
 
 ## 项目结构
 
 ```
+├── run.py                       # 启动器（uv run python run.py）
 ├── frontend/                    # Vue 3 前端项目
 │   ├── src/
+│   │   ├── api/
+│   │   │   └── client.js        # 统一 API 层（PyTauri invoke / fetch 回退）
 │   │   ├── components/         # Vue组件
 │   │   │   ├── AddLocation.vue # 添加位置对话框
 │   │   │   ├── ErrorDialog.vue  # 坐标转换错误弹框
@@ -29,14 +32,21 @@
 │   │   │   └── settings.js     # 设置管理
 │   │   ├── App.vue             # 主组件
 │   │   └── main.js             # 入口文件
-│   ├── dist/                   # 构建产物（由桌面端自动调用）
+│   ├── dist/                   # 构建产物（PyTauri frontendDist 指向此处）
 │   ├── package.json
 │   └── vite.config.ts
 ├── src/                        # Python 源码
+│   ├── tauri_app/              # PyTauri 桌面端（当前默认）
+│   │   ├── __init__.py         # Commands + main()（IPC 命令实现）
+│   │   ├── services.py         # 配置/激活状态/日志解析（纯逻辑）
+│   │   ├── __main__.py         # python -m tauri_app 入口
+│   │   ├── Tauri.toml          # PyTauri 窗口/资源/标识配置
+│   │   └── capabilities/
+│   │       └── default.toml    # IPC 权限（core/pytauri/dialog）
 │   ├── backend/
-│   │   └── app.py             # Flask后端服务
+│   │   └── app.py             # Flask后端（浏览器开发模式过渡）
 │   └── desktop/
-│       └── main.py            # PyWebView桌面端入口
+│       └── main.py            # 旧 PyWebView 入口（已废弃，仅存档）
 ├── pyproject.toml              # uv项目配置
 └── uv.lock                     # 依赖锁文件
 ```
@@ -56,26 +66,43 @@ npm run dev    # 开发服务器 (http://localhost:5173)
 npm run build  # 生产构建 (输出到 dist/)
 ```
 
-### 后端开发
+### 后端开发（浏览器开发模式的过渡方案）
 ```bash
-python src/backend/app.py  # 启动Flask服务 (端口5000)
+python src/backend/app.py  # 启动Flask服务 (端口5000)，配合 npm run dev
 ```
 
-### 桌面端运行（推荐）
+### 桌面端运行（PyTauri，推荐）
 ```bash
-python src/desktop/main.py  # 自动构建前端 + 启动Flask + 打开桌面窗口
+uv sync                                   # 安装/更新依赖（首次或依赖变化后）
+cd frontend && npm run build && cd ..     # 构建前端（首次或前端改动后）
+uv run python run.py                      # 启动桌面端
+
+# 开发模式（前端热更新）：两个终端
+cd frontend && npm run dev                # 终端 1：Vite (5173)
+$env:XUANHENG_DEV=1; uv run python run.py # 终端 2：PyTauri 加载 dev server
+
+uv run python run.py --smoke              # 自检：构建 Tauri 上下文与命令注册
 ```
 
-### 打包为EXE
+### 旧桌面端（PyWebView，已废弃）
+`python src/desktop/main.py` 仅作过渡保留；新功能请改 `src/tauri_app`。
+
+### 打包为EXE（PyTauri 单文件，无控制台）
 ```bash
-# 1. 确保前端已构建
+# 1. 构建前端
 cd frontend && npm run build && cd ..
 
-# 2. 使用 PyInstaller 打包（单文件，无控制台）
+# 2. PyInstaller 打包（单文件，无控制台）
 uv run pyinstaller xuanheng.spec --clean --noconfirm
 
-# 输出：dist/xuanheng.exe（约14MB）
+# 输出：dist/xuanheng.exe（约 30 MB）
 ```
+说明：
+- spec 已内置 PyTauri 所需内容：`pytauri-wheel` 元数据（entry point 定位扩展模块）、`pytauri_wheel.ext_mod`、`Tauri.toml`、`capabilities/`、`frontend/dist`
+- 目标机需已安装 **WebView2 运行时**（Windows 10/11 一般自带，否则安装 Evergreen Bootstrapper）
+- 冻结态启动失败会写入 `D:/Magic/xuanheng-error.log`；前端经 IPC 调用命令的记录在 `D:/Magic/xuanheng-ipc.log`
+- 单文件首次启动较慢（需解压到临时目录并可能被杀软扫描，约 1 分钟），属正常现象；追求启动速度可改 onedir 模式
+- 开发/调试仍用 `uv run python run.py`；旧的 `dist/xuanheng/` 目录是历史 PyWebView 产物，可删除
 
 ## UI布局说明
 
@@ -94,7 +121,7 @@ uv run pyinstaller xuanheng.spec --clean --noconfirm
 ### 前端功能 ✅
 1. **添加位置**
    - 坐标系选择：WGS84 / GCJ-02
-   - 输入方式：手动输入（已完成）、POS文件/日志（待实现）
+   - 输入方式：手动输入 / POS文件 / 日志（均已实现）
    - 坐标格式：不区分经纬度顺序，多个点用 `;` 分割
    - **默认选中**：添加的点自动设置为选中状态（显示在地图上）
 
@@ -182,10 +209,18 @@ uv run pyinstaller xuanheng.spec --clean --noconfirm
    - 自动缩放到合适的视图范围
    - 地图控件：比例尺、鹰眼（右下角）、控制栏（右上角）、地图类型切换
 
-### 后端功能
+### 桌面端 IPC 命令（PyTauri，`src/tauri_app/__init__.py`）
+- `get_settings` / `save_settings` - 读写 `D:/Magic/settings.json`
+- `get_status` - 激活状态与剩余天数
+- `set_title` - 设置原生窗口标题
+- `scan_log_dir` / `parse_log_files` - 日志目录扫描与正则解析
+- `write_text_file` - 写入导出文件（原生保存对话框由前端 `tauri-plugin-dialog` 获取路径）
+
+### 后端功能（Flask，仅浏览器开发模式）
 - `/api/health` - 健康检查接口
 - `/api/settings` - 读取/保存用户配置（存储到 D:/Magic/settings.json）
 - `/api/status` - 获取激活状态和剩余天数
+- `/api/log/scan`、`/api/log/parse` - 日志扫描与解析
 - `/` - 提供前端静态页面（Flask 托管 frontend/dist）
 
 ## 配色风格
@@ -227,8 +262,8 @@ JS API 2.0 中使用 TileLayer 子类管理图层，**不使用**以下写法：
 
 ## 重要约束
 
-1. **前后端通信**：Flask 后端默认运行在 `http://localhost:5000`
-2. **PyWebView 加载**：桌面端自动启动 Flask 服务后再加载页面
+1. **前后端通信**：桌面端通过 PyTauri IPC（`window.__TAURI__.pytauri.pyInvoke`）调用 `src/tauri_app` 中的命令；浏览器开发模式经 `frontend/src/api/client.js` 回退到 Flask 的 `/api/*`（默认 `http://localhost:5000`）
+2. **桌面端加载**：PyTauri 生产模式加载 `frontend/dist`（`Tauri.toml` 的 `frontendDist`）；`XUANHENG_DEV=1` 时加载 Vite dev server（5173）
 3. **地图服务商**：推荐高德地图（国内访问稳定）
 4. **API Key 管理**：存储在本地文件 `D:/Magic/settings.json`，不提交到代码仓库
 5. **地图控件**：Scale（比例尺）、HawkEye（鹰眼，右下角）、ControlBar（控制栏，右上角）
@@ -283,8 +318,10 @@ EE = 0.00669342162296594323  // 椭球偏心率平方
 - uv 包管理器
 
 ### 依赖说明
-- Flask + Flask-CORS：后端服务
-- Waitress：生产级 WSGI 服务器
-- PyWebView：桌面端窗口
+- PyTauri（pytauri-wheel）：桌面端壳 + Python IPC，无需 Rust 工具链
+- pydantic / anyio：PyTauri IPC 的序列化与异步运行时
+- Flask + Flask-CORS：浏览器开发模式的过渡后端
+- Waitress：生产级 WSGI 服务器（仅 Flask 模式）
+- PyWebView：旧桌面端入口（已废弃，依赖暂留）
 - Pinia：前端状态管理
 - Vite：前端构建工具

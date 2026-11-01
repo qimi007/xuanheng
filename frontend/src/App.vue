@@ -49,6 +49,7 @@ import Settings from './components/Settings.vue'
 import ErrorDialog from './components/ErrorDialog.vue'
 import { useSettingsStore } from './stores/settings'
 import { useLocationStore } from './stores/locations'
+import { getStatus, setTitle } from './api/client'
 
 const activeFeature = ref(null)
 const showDialog = ref(false)
@@ -76,7 +77,26 @@ const closeDialog = () => {
   activeFeature.value = null
 }
 
+const applyWindowTitle = async () => {
+  try {
+    const status = await getStatus()
+    if (!status || status.error) return
+    const base = '玄衡 v1.0.0'
+    let title = base
+    if (!status.isActivated) {
+      title = status.isExpired
+        ? `${base}(未激活，已过期，请填写API Key)`
+        : `${base}(未激活，体验剩余${status.remainingDays}天)`
+    }
+    document.title = title
+    await setTitle(title)
+  } catch (e) {
+    console.error('获取激活状态失败:', e)
+  }
+}
+
 onMounted(() => {
+  applyWindowTitle()
   const checkAndOpenSettings = () => {
     if (settingsStore.isLoaded && settingsStore.needsKey()) {
       toggleFeature('settings')

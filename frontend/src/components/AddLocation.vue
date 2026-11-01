@@ -99,6 +99,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useLocationStore } from '../stores/locations'
+import { scanLogDir, parseLogFiles as apiParseLogFiles } from '../api/client'
 
 const emit = defineEmits(['added'])
 
@@ -174,12 +175,7 @@ const scanLogDirectory = async () => {
   }
   logScanning.value = true
   try {
-    const response = await fetch('/api/log/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ directory: logDirectory.value })
-    })
-    const data = await response.json()
+    const data = await scanLogDir(logDirectory.value)
     if (data.error) {
       alert(data.error)
     } else {
@@ -199,16 +195,11 @@ const parseLogFiles = async () => {
   }
   logScanning.value = true
   try {
-    const response = await fetch('/api/log/parse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        directory: logDirectory.value,
-        pattern: logPattern.value,
-        fieldMapping: logFieldMapping.value
-      })
+    const data = await apiParseLogFiles({
+      directory: logDirectory.value,
+      pattern: logPattern.value,
+      fieldMapping: logFieldMapping.value
     })
-    const data = await response.json()
     if (data.error) {
       alert(data.error)
       return null

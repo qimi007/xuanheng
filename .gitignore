@@ -29,3 +29,6 @@ Thumbs.db
 
 # Build output
 frontend/dist/
+
+# uv cache (redirected into workspace under sandbox)
+.uv-cache/

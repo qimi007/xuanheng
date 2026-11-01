@@ -337,6 +337,7 @@
 <script setup>
 import { ref, nextTick, computed, watch } from 'vue'
 import { useLocationStore } from '../stores/locations'
+import { scanLogDir, parseLogFiles as apiParseLogFiles, saveFileAs } from '../api/client'
 
 defineEmits(['close'])
 
@@ -624,12 +625,7 @@ const scanLogDirectory = async () => {
   }
   addLogScanning.value = true
   try {
-    const response = await fetch('/api/log/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ directory: addLogDirectory.value })
-    })
-    const data = await response.json()
+    const data = await scanLogDir(addLogDirectory.value)
     if (data.error) {
       alert(data.error)
     } else {
@@ -649,16 +645,11 @@ const parseLogFiles = async () => {
   }
   addLogScanning.value = true
   try {
-    const response = await fetch('/api/log/parse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        directory: addLogDirectory.value,
-        pattern: addLogPattern.value,
-        fieldMapping: addLogFieldMapping.value
-      })
+    const data = await apiParseLogFiles({
+      directory: addLogDirectory.value,
+      pattern: addLogPattern.value,
+      fieldMapping: addLogFieldMapping.value
     })
-    const data = await response.json()
     if (data.error) {
       alert(data.error)
       return null
@@ -902,15 +893,12 @@ const exportGroup = (groupId, format = 'json') => {
 }
 
 const downloadFile = async (content, filename, mimeType) => {
-  const isJson = mimeType.includes('json')
-  const fileTypes = isJson ? ['POS JSON (*.pos.json)'] : ['POS CSV (*.pos.csv)']
-  
   try {
-    const result = await window.pywebview.api.save_file(content, filename, fileTypes)
+    const result = await saveFileAs(content, filename, mimeType)
     if (result.status === 'cancelled') {
       // 用户取消
-    } else if (result.status !== 'ok') {
-      alert('导出失败')
+    } else if (result.error) {
+      alert('导出失败：' + result.error)
     }
   } catch (e) {
     alert('导出失败：' + e.message)
